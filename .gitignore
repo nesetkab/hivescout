@@ -6,3 +6,4 @@ build
 hivescout.db
 hivescout.db-wal
 hivescout.db-shm
+.DS_Store
