@@ -246,12 +246,9 @@
         <!-- Gate & Qualitative -->
         <div class="card">
           <h3>Other</h3>
-          <div class="stat-bar-row">
-            <span>Gate Rate</span>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: {data.gateRate}%"></div>
-            </div>
-            <span class="stat-val">{data.gateRate}%</span>
+          <div class="detail-row">
+            <span>Gate Opens</span>
+            <span>{data.avgGateOpens}/match{data.gateInterval ? ` (every ~${data.gateInterval}s)` : ''}</span>
           </div>
           <div class="detail-row">
             <span>Driver Skill</span>

@@ -68,7 +68,6 @@ export function POST() {
 
         // Decide endgame first (it's part of the score)
         const autoLeave = Math.random() > 0.15 ? 1 : 0;
-        const openedGate = Math.random() > 0.5 ? 1 : 0;
         const endgameBase = baseTypes[Math.floor(Math.random() * baseTypes.length)];
         const method = endgameBase !== 'none' ? parkMethods[1 + Math.floor(Math.random() * 3)] : 'none';
         const parkFailed = endgameBase !== 'none' && Math.random() < 0.15;
@@ -94,6 +93,8 @@ export function POST() {
         const totalScored = Math.max(1, Math.round(noisyBudget * accuracy / denom));
         const totalMissed = Math.max(0, Math.round(noisyBudget * (1 - accuracy) / denom));
         const totalBalls = totalScored + totalMissed;
+        // Gate opens: roughly 1 open per 9 balls, with some noise
+        const openedGate = Math.max(0, Math.round(totalBalls / 9 + (Math.random() - 0.5) * 2));
         const autoBalls = Math.min(totalBalls, 3 + Math.floor(Math.random() * 6));
         const teleopBalls = totalBalls - autoBalls;
         // Split into events of 1-3 balls each

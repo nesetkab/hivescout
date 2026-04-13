@@ -24,7 +24,7 @@ export function load() {
         avgAttempted: 0, avgScored: 0, accuracy: 0,
         autoLeaveRate: 0, avgAutoCls: 0,
         avgTelCls: 0, avgTelOvf: 0,
-        gateRate: 0, avgSkill: 0, avgReliability: 0,
+        gateRate: 0, avgGateOpens: 0, gateInterval: 0, avgSkill: 0, avgReliability: 0,
         parkRate: 0, primaryPark: 'none',
         totalScore: 0, disconnects: 0,
         summary: '',
@@ -52,7 +52,10 @@ export function load() {
     const avgAutoCls = +(scouts.reduce((s, r) => s + r.auto_classified, 0) / n).toFixed(1);
     const avgTelCls = +(scouts.reduce((s, r) => s + r.teleop_classified, 0) / n).toFixed(1);
     const avgTelOvf = +(scouts.reduce((s, r) => s + r.teleop_overflow, 0) / n).toFixed(1);
-    const gateRate = Math.round(scouts.reduce((s, r) => s + r.opened_gate, 0) / n * 100);
+    const totalGateOpens = scouts.reduce((s: number, r: any) => s + r.opened_gate, 0);
+    const avgGateOpens = +(totalGateOpens / n).toFixed(1);
+    const gateInterval = avgGateOpens > 0 ? Math.round(120 / avgGateOpens) : 0;
+    const gateRate = Math.round(scouts.filter((s: any) => s.opened_gate > 0).length / n * 100);
     const avgSkill = +(scouts.reduce((s, r) => s + r.driver_skill, 0) / n).toFixed(1);
     const avgReliability = +(scouts.reduce((s, r) => s + r.reliability, 0) / n).toFixed(1);
 
@@ -92,7 +95,7 @@ export function load() {
       avgAttempted, avgScored, accuracy,
       autoLeaveRate, avgAutoCls,
       avgTelCls, avgTelOvf,
-      gateRate, avgSkill, avgReliability,
+      gateRate, avgGateOpens, gateInterval, avgSkill, avgReliability,
       parkRate, primaryPark, parkSuccessRate,
       totalScore: +totalScore.toFixed(1),
       disconnects,

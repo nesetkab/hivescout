@@ -163,7 +163,7 @@
               <span class="ms-label">Park</span>
             </div>
             <div class="mini-stat">
-              <span class="ms-val">{team.gateRate}%</span>
+              <span class="ms-val">{team.gateInterval ? `${team.gateInterval}s` : '-'}</span>
               <span class="ms-label">Gate</span>
             </div>
             <div class="mini-stat">
@@ -216,7 +216,7 @@
               <td>{team.accuracy}%</td>
               <td>{team.autoLeaveRate}%</td>
               <td>{team.parkRate}%</td>
-              <td>{team.gateRate}%</td>
+              <td>{team.gateInterval ? `${team.gateInterval}s` : '-'}</td>
               <td>{team.avgSkill}</td>
               <td>{team.avgReliability}</td>
               <td class="score-cell">{team.totalScore}</td>

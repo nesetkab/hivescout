@@ -86,7 +86,13 @@ export function load({ params }) {
   const avgAutoOverflow = matchCount ? +(perMatch.reduce((s, m) => s + m.auto_overflow, 0) / matchCount).toFixed(1) : 0;
 
   // Gate
-  const gateRate = matchCount ? Math.round(perMatch.reduce((s, m) => s + m.opened_gate, 0) / matchCount * 100) : 0;
+  // Gate frequency: opened_gate is now a count per match
+  const totalGateOpens = perMatch.reduce((s, m) => s + m.opened_gate, 0);
+  const avgGateOpens = matchCount ? +(totalGateOpens / matchCount).toFixed(1) : 0;
+  // Teleop is 120s. Avg seconds between gate opens.
+  const gateInterval = avgGateOpens > 0 ? Math.round(120 / avgGateOpens) : 0;
+  // Keep a rate too for backwards compat (% of matches where they opened gate at least once)
+  const gateRate = matchCount ? Math.round(perMatch.filter(m => m.opened_gate > 0).length / matchCount * 100) : 0;
 
   // Park analysis
   const parkAttempts = perMatch.filter(m => m.endgame_base !== 'none');
@@ -152,8 +158,8 @@ export function load({ params }) {
       parts.push('They do not park');
     }
 
-    if (gateRate > 50) {
-      parts.push(`Opens gate ${gateRate}% of the time`);
+    if (avgGateOpens > 0) {
+      parts.push(`Opens gate every ~${gateInterval}s (${avgGateOpens}/match)`);
     }
 
     if (disconnectCount > 0) {
@@ -173,6 +179,8 @@ export function load({ params }) {
     scoring: { avgAttempted, avgScored, scoringRate, stdDevScored },
     auto: { leaveRate, avgClassified: avgAutoClassified, avgOverflow: avgAutoOverflow },
     gateRate,
+    avgGateOpens,
+    gateInterval,
     park: {
       attemptsCount: parkAttemptsCount,
       successRate: parkSuccessRate,
