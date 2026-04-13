@@ -392,6 +392,7 @@
   {/if}
 
   {#if phase === "auto" || phase === "transition" || phase === "teleop" || phase === "endgame"}
+    <div class="scouting-screen">
     <div
       class="timer-bar"
       class:auto={phase === "auto"}
@@ -557,6 +558,7 @@
         {/if}
       </div>
     {/if}
+    </div>
   {/if}
 
   {#if phase === "review"}
@@ -711,6 +713,14 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .scouting-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: calc(100dvh - 60px);
+    overflow: hidden;
   }
 
   .setup {
@@ -930,10 +940,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
-    border-radius: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
     background: var(--bg-light);
     border-left: 4px solid var(--text-dim);
+    flex-shrink: 0;
   }
 
   .timer-bar.auto {
@@ -951,18 +962,19 @@
 
   .transition-banner {
     text-align: center;
-    padding: 8px;
+    padding: 5px;
     background: rgba(176, 122, 255, 0.15);
     border: 1px solid rgba(176, 122, 255, 0.4);
     border-radius: 6px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #b07aff;
+    flex-shrink: 0;
   }
 
   .timer-phase {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
   }
   .timer-clock {
     font-size: 1.4rem;
@@ -973,13 +985,14 @@
   /* Quick action buttons */
   .quick-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   .quick-btn {
     flex: 1;
-    padding: 10px;
-    font-size: 0.85rem;
+    padding: 8px;
+    font-size: 0.8rem;
     font-weight: 600;
     text-align: center;
     border-radius: 8px;
@@ -997,16 +1010,19 @@
   /* Field map */
   .field-container {
     position: relative;
-    width: 100%;
+    flex: 1;
+    min-height: 0;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
+    display: flex;
+    flex-direction: column;
   }
 
   .field {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1;
+    flex: 1;
+    min-height: 0;
     border-radius: 6px;
     overflow: hidden;
   }
@@ -1014,7 +1030,7 @@
   .field-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
     pointer-events: none;
   }
@@ -1022,12 +1038,13 @@
   .field-stats {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 4px;
+    gap: 10px;
+    margin-top: 2px;
+    flex-shrink: 0;
   }
 
   .fs-stat {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
@@ -1078,23 +1095,24 @@
   .action-panel {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px;
+    gap: 4px;
+    padding: 8px 10px;
     background: var(--bg-light);
-    border-radius: 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
   }
 
   .action-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
 
   .action-label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     color: var(--text-dim);
-    min-width: 70px;
+    min-width: 60px;
   }
 
   .action-buttons {
@@ -1105,11 +1123,11 @@
 
   .action-buttons button {
     flex: 1;
-    padding: 12px 8px;
-    font-size: 1.1rem;
+    padding: 10px 6px;
+    font-size: 1rem;
     font-weight: 700;
     text-align: center;
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   .action-buttons button.selected {
@@ -1247,21 +1265,29 @@
   .endgame-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .endgame-section h3 {
+    font-size: 0.8rem;
+    margin: 0;
+    padding: 0;
+    border: none;
   }
 
   .park-buttons {
     display: flex;
-    gap: 6px;
+    gap: 4px;
   }
 
   .park-btn {
     flex: 1;
-    padding: 10px 4px;
-    font-size: 0.8rem;
+    padding: 7px 4px;
+    font-size: 0.75rem;
     font-weight: 600;
     text-align: center;
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--bg-light);
     border: 2px solid var(--bg-lighter);
   }
