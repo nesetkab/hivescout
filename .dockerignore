@@ -1,0 +1,7 @@
+node_modules
+.svelte-kit
+build
+hivescout.db
+hivescout.db-wal
+hivescout.db-shm
+.env
