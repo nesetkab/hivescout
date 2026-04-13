@@ -93,8 +93,7 @@
   }
 
   main.scouting {
-    padding: 8px;
-    padding-bottom: 8px;
+    padding: 4px 6px;
     overflow: hidden;
   }
 

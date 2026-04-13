@@ -394,7 +394,39 @@
   {#if phase === "auto" || phase === "transition" || phase === "teleop" || phase === "endgame"}
     <div class="scouting-screen">
 
-    <!-- Field map first -->
+    <!-- Timer at top -->
+    <div
+      class="timer-bar"
+      class:auto={phase === "auto"}
+      class:transition={phase === "transition"}
+      class:teleop={phase === "teleop"}
+      class:endgame={phase === "endgame"}
+    >
+      <span class="timer-phase">{selectedMatchNum} - #{selectedTeam}</span>
+      <span class="timer-clock">{displayTime}</span>
+      <button class="danger" onclick={stopTimer}>Stop</button>
+    </div>
+
+    <div class="quick-actions">
+      {#if phase === "auto" || phase === "transition"}
+        <button
+          class="quick-btn"
+          class:active={autoLeave}
+          onclick={() => (autoLeave = !autoLeave)}
+        >
+          LEFT LAUNCH
+        </button>
+      {/if}
+      <button class="quick-btn" class:active={gateFlash} onclick={toggleGate}>
+        {gateFlash
+          ? "GATE OPENED"
+          : gateCount > 0
+            ? `GATE (${gateCount})`
+            : "OPEN GATE"}
+      </button>
+    </div>
+
+    <!-- Field map -->
     <div
       class="field-container"
       onclick={handleFieldTap}
@@ -440,42 +472,6 @@
           <button class="small" onclick={undoLast}>Undo</button>
         {/if}
       </div>
-    </div>
-
-    <!-- Timer and controls below field -->
-    <div
-      class="timer-bar"
-      class:auto={phase === "auto"}
-      class:transition={phase === "transition"}
-      class:teleop={phase === "teleop"}
-      class:endgame={phase === "endgame"}
-    >
-      <span class="timer-phase">{selectedMatchNum} - #{selectedTeam}</span>
-      <span class="timer-clock">{displayTime}</span>
-      <button class="danger" onclick={stopTimer}>Stop</button>
-    </div>
-
-    {#if phase === "transition"}
-      <div class="transition-banner">TRANSITION - pick up controllers</div>
-    {/if}
-
-    <div class="quick-actions">
-      {#if phase === "auto" || phase === "transition"}
-        <button
-          class="quick-btn"
-          class:active={autoLeave}
-          onclick={() => (autoLeave = !autoLeave)}
-        >
-          LEFT LAUNCH
-        </button>
-      {/if}
-      <button class="quick-btn" class:active={gateFlash} onclick={toggleGate}>
-        {gateFlash
-          ? "GATE OPENED"
-          : gateCount > 0
-            ? `GATE (${gateCount})`
-            : "OPEN GATE"}
-      </button>
     </div>
 
     <!-- Attempted / Scored -->
@@ -721,14 +717,14 @@
   .match-scout {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 0px;
   }
 
   .scouting-screen {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    height: calc(100dvh - 60px);
+    gap: 4px;
+    height: calc(100dvh - 70px);
     overflow: hidden;
   }
 
@@ -736,6 +732,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-top: 8px;
   }
 
   label {
@@ -1040,6 +1037,7 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+    object-position: top;
     display: block;
     pointer-events: none;
   }
