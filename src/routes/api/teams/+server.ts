@@ -14,3 +14,13 @@ export function POST({ request }) {
     return json({ success: true });
   })();
 }
+
+export function DELETE() {
+  db.prepare('DELETE FROM shift_assignments').run();
+  db.prepare('DELETE FROM scouter_assignments').run();
+  db.prepare('DELETE FROM match_scouts').run();
+  db.prepare('DELETE FROM prescout_responses').run();
+  db.prepare('DELETE FROM matches').run();
+  db.prepare('DELETE FROM teams').run();
+  return json({ success: true });
+}

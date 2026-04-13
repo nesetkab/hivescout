@@ -117,6 +117,12 @@
     invalidateAll();
   }
 
+  async function clearTeams() {
+    if (!confirm('Delete ALL teams, matches, and scout data?')) return;
+    await fetch('/api/teams', { method: 'DELETE' });
+    invalidateAll();
+  }
+
   async function addMatch() {
     if (!matchNumber) return;
     await fetch('/api/matches', {
@@ -213,7 +219,12 @@
       </div>
 
       <div class="card">
-        <h3>Teams ({data.teams.length})</h3>
+        <div class="card-header">
+          <h3>Teams ({data.teams.length})</h3>
+          {#if data.teams.length > 0}
+            <button class="danger small" onclick={clearTeams}>Clear All</button>
+          {/if}
+        </div>
         <div class="item-list">
           {#each data.teams as team}
             <div class="item">
