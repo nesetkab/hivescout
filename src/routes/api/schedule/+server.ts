@@ -17,7 +17,7 @@ export function GET() {
 
 export function POST({ request }) {
   return (async () => {
-    const { shift_length, group_order } = await request.json();
+    const { shift_length, group_order, active_groups } = await request.json();
 
     // Load groups in specified order with their members
     const groups = [];
@@ -31,7 +31,7 @@ export function POST({ request }) {
     // Load all matches
     const matches = db.prepare('SELECT * FROM matches ORDER BY match_number').all() as any[];
 
-    const assignments = generateSchedule(groups, matches, shift_length);
+    const assignments = generateSchedule(groups, matches, shift_length, active_groups || 1);
 
     // Clear old schedule and insert new
     const tx = db.transaction(() => {

@@ -141,7 +141,7 @@
       "_server.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.BrZnbF0H.css"
+      "_app/immutable/assets/_layout.Cqw6YgFx.css"
     ]
   },
   "src/routes/+page.svelte": {
@@ -150,10 +150,11 @@
     "src": "src/routes/+page.svelte",
     "isEntry": true,
     "imports": [
+      "_navigation.js",
       "_server.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.DJD0hPzJ.css"
+      "_app/immutable/assets/_page.C0d32srJ.css"
     ]
   },
   "src/routes/api/analytics/+server.ts": {
@@ -423,7 +424,7 @@
       "_server.js"
     ],
     "css": [
-      "_app/immutable/assets/_page.CLx-rdCS.css"
+      "_app/immutable/assets/_page.5pS25fdK.css"
     ]
   },
   "src/routes/manager/scouts/+page.server.ts": {

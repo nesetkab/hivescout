@@ -65,6 +65,6 @@ declare module "$app/types" {
 		};
 		Pathname(): "/" | "/api/analytics" | "/api/export" | "/api/groups" | "/api/groups/members" | "/api/import" | "/api/import/scores" | "/api/matches" | "/api/matchscout" | "/api/notes" | "/api/prescout" | "/api/schedule" | "/api/scouter-accuracy" | "/api/scouters" | "/api/scouters/assign" | "/api/seed-test" | "/api/teams" | "/manager" | "/manager/analytics" | `/manager/analytics/${string}` & {} | "/manager/predictions" | "/manager/scouters" | "/manager/scouts" | "/manager/setup" | "/scout" | "/scout/match" | "/scout/prescout";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
-		Asset(): "/field.png" | "/icon-192.png" | "/icon-512.png" | "/logo-long.svg" | "/logo.svg" | "/manifest.json" | "/sw.js" | string & {};
+		Asset(): "/favicon.svg" | "/field.png" | "/icon-192.png" | "/icon-512.png" | "/logo-long.svg" | "/logo.svg" | "/manifest.json" | "/sw.js" | string & {};
 	}
 }

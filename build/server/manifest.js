@@ -7,26 +7,26 @@ function __memo(fn) {
 return {
 	appDir: "_app",
 	appPath: "_app",
-	assets: new Set(["field.png","icon-192.png","icon-512.png","logo-long.svg","logo.svg","manifest.json","sw.js"]),
-	mimeTypes: {".png":"image/png",".svg":"image/svg+xml",".json":"application/json",".js":"text/javascript"},
+	assets: new Set(["favicon.svg","field.png","icon-192.png","icon-512.png","logo-long.svg","logo.svg","manifest.json","sw.js"]),
+	mimeTypes: {".svg":"image/svg+xml",".png":"image/png",".json":"application/json",".js":"text/javascript"},
 	_: {
-		client: {start:"_app/immutable/entry/start.Cjcpajej.js",app:"_app/immutable/entry/app.DfIwzeyA.js",imports:["_app/immutable/entry/start.Cjcpajej.js","_app/immutable/chunks/BzSQjt5-.js","_app/immutable/chunks/DYyj0PsP.js","_app/immutable/entry/app.DfIwzeyA.js","_app/immutable/chunks/DYyj0PsP.js","_app/immutable/chunks/C-OaypFN.js","_app/immutable/chunks/t62M88qj.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
+		client: {start:"_app/immutable/entry/start.KMM5Fwdm.js",app:"_app/immutable/entry/app.CzX90M8T.js",imports:["_app/immutable/entry/start.KMM5Fwdm.js","_app/immutable/chunks/e7lCAgNO.js","_app/immutable/chunks/DYyj0PsP.js","_app/immutable/entry/app.CzX90M8T.js","_app/immutable/chunks/DYyj0PsP.js","_app/immutable/chunks/C-OaypFN.js","_app/immutable/chunks/t62M88qj.js"],stylesheets:[],fonts:[],uses_env_dynamic_public:false},
 		nodes: [
-			__memo(() => import('./chunks/0-D6mekkhe.js')),
-			__memo(() => import('./chunks/1-Y9QySrRo.js')),
-			__memo(() => import('./chunks/2-BBePfnsh.js')),
-			__memo(() => import('./chunks/3-7ZgWXHcg.js')),
-			__memo(() => import('./chunks/4-D1aN5WTR.js')),
-			__memo(() => import('./chunks/5-DDavfSyi.js')),
-			__memo(() => import('./chunks/6-DS6rFGQ-.js')),
-			__memo(() => import('./chunks/7-DxC99CEE.js')),
-			__memo(() => import('./chunks/8-2_3EwXj2.js')),
-			__memo(() => import('./chunks/9-BCceQkrJ.js')),
-			__memo(() => import('./chunks/10-Dclf1OwX.js')),
-			__memo(() => import('./chunks/11-BRRxsFU2.js')),
-			__memo(() => import('./chunks/12-CLbp-Bej.js')),
-			__memo(() => import('./chunks/13-CQIGaaj-.js')),
-			__memo(() => import('./chunks/14-Cms423uo.js'))
+			__memo(() => import('./chunks/0-D9j4hIJf.js')),
+			__memo(() => import('./chunks/1-DBwaVe-w.js')),
+			__memo(() => import('./chunks/2-1SwLpDMw.js')),
+			__memo(() => import('./chunks/3-CZWoiA_7.js')),
+			__memo(() => import('./chunks/4-DYP4wV4t.js')),
+			__memo(() => import('./chunks/5-CICKUOIW.js')),
+			__memo(() => import('./chunks/6-D1G0fOeP.js')),
+			__memo(() => import('./chunks/7-BgytwsL5.js')),
+			__memo(() => import('./chunks/8-BxZ3T0QR.js')),
+			__memo(() => import('./chunks/9-Cx3SlXfP.js')),
+			__memo(() => import('./chunks/10-DXWmrUKn.js')),
+			__memo(() => import('./chunks/11-CMIKfAWS.js')),
+			__memo(() => import('./chunks/12-DtDlpylj.js')),
+			__memo(() => import('./chunks/13-C_YgxpG0.js')),
+			__memo(() => import('./chunks/14-du0OO2b6.js'))
 		],
 		remotes: {
 			
@@ -44,112 +44,112 @@ return {
 				pattern: /^\/api\/analytics\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-ByxdFwoJ.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-DeprXLI_.js'))
 			},
 			{
 				id: "/api/export",
 				pattern: /^\/api\/export\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-D9Jhev6g.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-CuUeFm6e.js'))
 			},
 			{
 				id: "/api/groups",
 				pattern: /^\/api\/groups\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-DI0uzl1g.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-BOKDjpZy.js'))
 			},
 			{
 				id: "/api/groups/members",
 				pattern: /^\/api\/groups\/members\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-CVf1W4n2.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-DLyaKmn_.js'))
 			},
 			{
 				id: "/api/import",
 				pattern: /^\/api\/import\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-BHvUgVOe.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-Honi2k5T.js'))
 			},
 			{
 				id: "/api/import/scores",
 				pattern: /^\/api\/import\/scores\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-DzXSz282.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-BGdMs_Uh.js'))
 			},
 			{
 				id: "/api/matches",
 				pattern: /^\/api\/matches\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-D3rzDfvx.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-BV_IybfG.js'))
 			},
 			{
 				id: "/api/matchscout",
 				pattern: /^\/api\/matchscout\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-BZBbjB5x.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-ClOv_qYw.js'))
 			},
 			{
 				id: "/api/notes",
 				pattern: /^\/api\/notes\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-B5haIItD.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-8nxiKGpU.js'))
 			},
 			{
 				id: "/api/prescout",
 				pattern: /^\/api\/prescout\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-DNmWnsjP.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-CWrRmphf.js'))
 			},
 			{
 				id: "/api/schedule",
 				pattern: /^\/api\/schedule\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-C7rvQM8H.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-BYTyvjeG.js'))
 			},
 			{
 				id: "/api/scouter-accuracy",
 				pattern: /^\/api\/scouter-accuracy\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-Bk2-nHqf.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-C9_F09bk.js'))
 			},
 			{
 				id: "/api/scouters",
 				pattern: /^\/api\/scouters\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-BvVZFRMJ.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-fpPO852Q.js'))
 			},
 			{
 				id: "/api/scouters/assign",
 				pattern: /^\/api\/scouters\/assign\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-BR88bJts.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-Do4pxm9t.js'))
 			},
 			{
 				id: "/api/seed-test",
 				pattern: /^\/api\/seed-test\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-ByhtEbfT.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-z90kSf83.js'))
 			},
 			{
 				id: "/api/teams",
 				pattern: /^\/api\/teams\/?$/,
 				params: [],
 				page: null,
-				endpoint: __memo(() => import('./chunks/_server.ts-BpEbexv8.js'))
+				endpoint: __memo(() => import('./chunks/_server.ts-DuSMqipd.js'))
 			},
 			{
 				id: "/manager",

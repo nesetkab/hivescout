@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { join } from "path";
 //#region src/lib/server/db.ts
-var db = new Database(join(process.cwd(), "hivescout.db"));
+var db = new Database(process.env.DATABASE_PATH || join(process.cwd(), "hivescout.db"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 db.exec(`

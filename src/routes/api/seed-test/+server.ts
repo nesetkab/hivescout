@@ -2,11 +2,11 @@ import { json } from '@sveltejs/kit';
 import db from '$lib/server/db';
 
 export function POST() {
-  // Ensure a test scouter exists
-  let scouter = db.prepare('SELECT * FROM scouters WHERE name = ?').get('TestBot') as any;
-  if (!scouter) {
+  // Use all existing scouters, create a fallback if none exist
+  let scouters = db.prepare('SELECT * FROM scouters').all() as any[];
+  if (scouters.length === 0) {
     db.prepare('INSERT INTO scouters (name) VALUES (?)').run('TestBot');
-    scouter = db.prepare('SELECT * FROM scouters WHERE name = ?').get('TestBot') as any;
+    scouters = db.prepare('SELECT * FROM scouters').all() as any[];
   }
 
   const matches = db.prepare('SELECT * FROM matches').all() as any[];
@@ -15,11 +15,20 @@ export function POST() {
     return json({ error: 'Import an event first' }, { status: 400 });
   }
 
+  // Give each scouter a different accuracy personality
+  // Lower noise = more accurate scouter
+  const scouterProfiles = scouters.map((s: any, i: number) => ({
+    id: s.id,
+    name: s.name,
+    noiseLevel: 0.05 + (i * 0.08), // first scouter: 5% noise (A grade), last: more noise (lower grade)
+  }));
+
   const teamNums = teams.map((t: any) => t.number);
   const parkMethods = ['none', 'normal', 'tilt', 'lift'];
   const baseTypes = ['none', 'none', 'partial', 'partial', 'full', 'full', 'full'];
 
   let count = 0;
+  let scouterIdx = 0;
 
   const insert = db.prepare(`
     INSERT INTO match_scouts (
@@ -35,32 +44,57 @@ export function POST() {
 
   const tx = db.transaction(() => {
     for (const match of matches) {
-      // Pick teams that are in this match
+      // Scout all 4 teams in each match
       const matchTeams = [match.red1, match.red2, match.blue1, match.blue2].filter(Boolean);
-      // Scout 1-2 random teams per match
-      const toScout = matchTeams.slice(0, 1 + Math.floor(Math.random() * Math.min(2, matchTeams.length)));
+      const toScout = matchTeams;
 
       for (const teamNum of toScout) {
         if (!teamNums.includes(teamNum)) continue;
 
-        // Check if already scouted
+        // Pick next scouter in rotation
+        const profile = scouterProfiles[scouterIdx % scouterProfiles.length];
+        scouterIdx++;
+
+        // Check if already scouted by this scouter
         const exists = db.prepare(
           'SELECT 1 FROM match_scouts WHERE match_id = ? AND team_number = ? AND scouter_id = ?'
-        ).get(match.id, teamNum, scouter.id);
+        ).get(match.id, teamNum, profile.id);
         if (exists) continue;
 
-        const autoLeave = Math.random() > 0.2 ? 1 : 0;
+        // Work backwards from actual score to generate realistic data
+        const isRed = teamNum === match.red1 || teamNum === match.red2;
+        const allianceScore = isRed ? (match.score_red || 60) : (match.score_blue || 60);
+        const targetContribution = allianceScore / 2;
+
+        // Decide endgame first (it's part of the score)
+        const autoLeave = Math.random() > 0.15 ? 1 : 0;
         const openedGate = Math.random() > 0.5 ? 1 : 0;
         const endgameBase = baseTypes[Math.floor(Math.random() * baseTypes.length)];
         const method = endgameBase !== 'none' ? parkMethods[1 + Math.floor(Math.random() * 3)] : 'none';
         const parkFailed = endgameBase !== 'none' && Math.random() < 0.15;
-        const disconnected = Math.random() < 0.08;
+        const disconnected = Math.random() < 0.05;
 
-        // Generate scoring events
-        const events: any[] = [];
-        // Target 50-80 total balls attempted
-        const totalBalls = 50 + Math.floor(Math.random() * 31);
-        const autoBalls = 5 + Math.floor(Math.random() * 10);
+        const endgamePts = endgameBase === 'full' ? 10 : endgameBase === 'partial' ? 5 : 0;
+        const autoPts = autoLeave ? 3 : 0;
+
+        // Remaining points come from scoring events (classified=3pts, overflow=1pt)
+        const scoringBudget = Math.max(0, targetContribution - endgamePts - autoPts);
+
+        // Add noise based on scouter's accuracy profile
+        const noise = 1 + (Math.random() - 0.5) * 2 * profile.noiseLevel;
+        const noisyBudget = Math.max(0, Math.round(scoringBudget * noise));
+
+        // Generate events that roughly add up to the budget
+        // classified = 3pts, overflow = 1pt. Target ~60-75% accuracy
+        const accuracy = 0.55 + Math.random() * 0.25;
+        // total scored * 3 + total missed * 1 ≈ noisyBudget
+        // scored * 3 + missed * 1 = budget, scored/(scored+missed) = accuracy
+        // scored = budget * accuracy / (3*accuracy + 1*(1-accuracy))
+        const denom = 3 * accuracy + 1 * (1 - accuracy);
+        const totalScored = Math.max(1, Math.round(noisyBudget * accuracy / denom));
+        const totalMissed = Math.max(0, Math.round(noisyBudget * (1 - accuracy) / denom));
+        const totalBalls = totalScored + totalMissed;
+        const autoBalls = Math.min(totalBalls, 3 + Math.floor(Math.random() * 6));
         const teleopBalls = totalBalls - autoBalls;
         // Split into events of 1-3 balls each
         let autoRemaining = autoBalls;
@@ -77,6 +111,8 @@ export function POST() {
           teleopEventList.push(att);
           teleopRemaining -= att;
         }
+
+        const events: any[] = [];
 
         // Launch zones on rotated field (goals at top):
         // Top launch zone (goal-side): triangle roughly x:17-83%, y:5-50%
@@ -115,27 +151,41 @@ export function POST() {
           };
         }
 
+        // Distribute scored/missed across events with the target accuracy
+        let scoredRemaining = totalScored;
+        let missedRemaining = totalMissed;
+
         for (const att of autoEventList) {
-          const scored = Math.floor(Math.random() * (att + 1));
+          // Distribute proportionally
+          const canScore = Math.min(att, scoredRemaining);
+          const canMiss = Math.min(att, missedRemaining);
+          const s = Math.min(att, Math.round(att * accuracy) + (Math.random() > 0.5 ? 1 : 0));
+          const actualScored = Math.min(s, canScore + canMiss > 0 ? Math.min(s, scoredRemaining) : 0);
+          scoredRemaining -= actualScored;
+          missedRemaining -= (att - actualScored);
+
           const pos = randomLaunchPoint(baseY, 12);
           events.push({
             phase: 'auto',
             x: pos.x, y: pos.y,
             attempted: att,
-            scored,
+            scored: Math.max(0, actualScored),
             time: Math.floor(Math.random() * 30)
           });
         }
 
         for (const att of teleopEventList) {
-          const scored = Math.floor(Math.random() * (att + 1));
-          // Teleop has slightly more spread
+          const s = Math.min(att, Math.round(att * accuracy) + (Math.random() > 0.5 ? 1 : 0));
+          const actualScored = Math.min(s, scoredRemaining);
+          scoredRemaining -= actualScored;
+          missedRemaining -= (att - actualScored);
+
           const pos = randomLaunchPoint(baseY, 18);
           events.push({
             phase: 'teleop',
             x: pos.x, y: pos.y,
             attempted: att,
-            scored,
+            scored: Math.max(0, actualScored),
             time: 45 + Math.floor(Math.random() * 120)
           });
         }
@@ -151,7 +201,7 @@ export function POST() {
         if (method !== 'none') noteParts.push(`[PARK: ${method}]`);
 
         insert.run(
-          match.id, teamNum, scouter.id,
+          match.id, teamNum, profile.id,
           autoLeave, autoClassified, autoOverflow, 0,
           teleopClassified, teleopOverflow, 0, 0,
           openedGate, endgameBase,

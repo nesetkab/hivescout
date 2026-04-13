@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hivescout-v1';
+const CACHE_NAME = 'hivescout-v2';
 const STATIC_ASSETS = [
   '/',
   '/field.png',

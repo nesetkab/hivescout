@@ -29,18 +29,22 @@ export function load() {
     ORDER BY s.name
   `).all() as any[];
 
-  const assignmentCount = (db.prepare('SELECT COUNT(*) as c FROM shift_assignments').get() as any).c;
+  let assignmentCount = 0;
+  try { assignmentCount = (db.prepare('SELECT COUNT(*) as c FROM shift_assignments').get() as any).c; } catch {}
 
   // Get schedule preview (first 20 matches)
-  const schedulePreview = db.prepare(`
-    SELECT sa.*, m.match_number, s.name as scouter_name, g.name as group_name, t.name as team_name
-    FROM shift_assignments sa
-    JOIN matches m ON sa.match_id = m.id
-    JOIN scouters s ON sa.scouter_id = s.id
-    JOIN scout_groups g ON sa.group_id = g.id
-    JOIN teams t ON sa.team_number = t.number
-    ORDER BY m.match_number, sa.id
-  `).all();
+  let schedulePreview: any[] = [];
+  try {
+    schedulePreview = db.prepare(`
+      SELECT sa.*, m.match_number, s.name as scouter_name, g.name as group_name, t.name as team_name
+      FROM shift_assignments sa
+      JOIN matches m ON sa.match_id = m.id
+      JOIN scouters s ON sa.scouter_id = s.id
+      JOIN scout_groups g ON sa.group_id = g.id
+      LEFT JOIN teams t ON sa.team_number = t.number
+      ORDER BY m.match_number, sa.id
+    `).all();
+  } catch {}
 
   return { scouters, teams, groups, groupMembers, assignmentCount, schedulePreview };
 }

@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import db from '$lib/server/db';
-import { getEventTeams, getEventSchedule, getEventMatches, searchEvents } from '$lib/server/ftc-api';
+import { getEventTeams, getEventSchedule, getEventMatches, searchEvents, type FTCMatch } from '$lib/server/ftc-api';
 
 export function GET({ url }) {
   return (async () => {
@@ -36,21 +36,29 @@ export function POST({ request }) {
     });
     teamTx();
 
-    // Import schedule (try schedule first, fall back to matches)
-    let matches = await getEventSchedule(eventCode);
-    if (!matches.length) {
-      matches = await getEventMatches(eventCode);
+    // Import schedule and match results
+    let schedule = await getEventSchedule(eventCode);
+    let matchResults = await getEventMatches(eventCode);
+
+    // Merge: use schedule for team assignments, results for scores
+    const resultMap = new Map<number, FTCMatch>();
+    for (const m of matchResults) {
+      if (m.tournamentLevel === 'QUALIFICATION' || m.tournamentLevel === 'qual') {
+        resultMap.set(m.matchNumber, m);
+      }
     }
 
-    const qualMatches = matches.filter(
+    // Use schedule if available, otherwise fall back to results
+    let allMatches = schedule.length ? schedule : matchResults;
+    const qualMatches = allMatches.filter(
       (m) => m.tournamentLevel === 'QUALIFICATION' || m.tournamentLevel === 'qual'
     );
 
     const insertMatch = db.prepare(`
-      INSERT OR REPLACE INTO matches (id, match_number, division, red1, red2, blue1, blue2, scheduled_time, status)
+      INSERT OR REPLACE INTO matches (id, match_number, division, red1, red2, blue1, blue2, scheduled_time, status, score_red, score_blue)
       VALUES (
         (SELECT id FROM matches WHERE match_number = ? AND division = ?),
-        ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
     `);
 
@@ -58,7 +66,12 @@ export function POST({ request }) {
       for (const m of qualMatches) {
         const red = m.teams.filter((t) => t.station.startsWith('Red'));
         const blue = m.teams.filter((t) => t.station.startsWith('Blue'));
-        const hasScore = m.scoreRedFinal !== null && m.scoreRedFinal !== -1;
+
+        // Check if we have actual scores from results
+        const result = resultMap.get(m.matchNumber);
+        const scoreRed = result?.scoreRedFinal != null && result.scoreRedFinal !== -1 ? result.scoreRedFinal : null;
+        const scoreBlue = result?.scoreBlueFinal != null && result.scoreBlueFinal !== -1 ? result.scoreBlueFinal : null;
+        const hasScore = scoreRed !== null;
 
         insertMatch.run(
           m.matchNumber, eventCode,
@@ -69,7 +82,9 @@ export function POST({ request }) {
           blue[0]?.teamNumber || null,
           blue[1]?.teamNumber || null,
           m.scheduledStartTime || m.actualStartTime || null,
-          hasScore ? 'completed' : 'upcoming'
+          hasScore ? 'completed' : 'upcoming',
+          scoreRed,
+          scoreBlue
         );
         results.matches++;
       }

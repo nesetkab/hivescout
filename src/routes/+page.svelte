@@ -1,20 +1,27 @@
 <script>
+  import { goto } from '$app/navigation';
   let name = $state("");
+
+  function enterScout() {
+    if (!name.trim()) return;
+    if (name.trim().toLowerCase() === 'mngr') {
+      goto('/manager');
+    } else {
+      goto(`/scout?name=${encodeURIComponent(name)}`);
+    }
+  }
 </script>
 
 <div class="landing">
   <img src="/logo.svg" alt="HiveScout" class="logo" />
 
   <div class="entry">
-    <input bind:value={name} placeholder="Your name" />
-    <div class="buttons">
-      <a href="/scout?name={encodeURIComponent(name)}">
-        <button class="primary" disabled={!name.trim()}>Scout</button>
-      </a>
-      <a href="/manager">
-        <button>Manage</button>
-      </a>
-    </div>
+    <form onsubmit={(e) => { e.preventDefault(); enterScout(); }}>
+      <input bind:value={name} placeholder="Your name" />
+      <div class="buttons">
+        <button type="submit" class="primary" disabled={!name.trim()}>Enter</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -40,11 +47,14 @@
   }
 
   .entry {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .entry form {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    width: 100%;
-    max-width: 300px;
   }
 
   .buttons {

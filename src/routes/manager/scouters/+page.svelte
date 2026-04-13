@@ -15,6 +15,28 @@
     loadingAccuracy = false;
   });
 
+  async function deleteAllScouters() {
+    if (!confirm(`Delete ALL ${data.scouters?.length} scouters and all their data?`)) return;
+    for (const s of data.scouters) {
+      await fetch('/api/scouters', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: s.id })
+      });
+    }
+    invalidateAll();
+  }
+
+  async function deleteScouter(id: number, name: string) {
+    if (!confirm(`Delete scouter "${name}" and all their data?`)) return;
+    await fetch('/api/scouters', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    invalidateAll();
+  }
+
   // Group management
   let newGroupName = $state('');
   let addToGroup = $state('');
@@ -22,6 +44,7 @@
 
   // Schedule generation
   let shiftLength = $state(5);
+  let activeGroups = $state(1);
   let generating = $state(false);
 
   // Group colors for visual coding
@@ -78,7 +101,7 @@
     await fetch('/api/schedule', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shift_length: shiftLength, group_order: groupOrder })
+      body: JSON.stringify({ shift_length: shiftLength, group_order: groupOrder, active_groups: activeGroups })
     });
     generating = false;
     invalidateAll();
@@ -91,12 +114,19 @@
   }
 
   // Unassigned scouters (not in any group)
-  let unassigned = $derived(data.scouters.filter((s: any) => !s.group_id));
+  let unassigned = $derived((data.scouters || []).filter((s: any) => !s.group_id));
+
+  let poolSize = $derived.by(() => {
+    if (!data.groups?.length || !data.groupMembers) return 0;
+    const sizes = data.groups.map((g: any) => data.groupMembers.filter((m: any) => m.group_id === g.id).length);
+    const avg = sizes.length ? sizes.reduce((a: number, b: number) => a + b, 0) / sizes.length : 0;
+    return Math.round(avg * activeGroups);
+  });
 
   // Group schedule by match for preview
   let scheduleByMatch = $derived.by(() => {
     const map = new Map<number, any[]>();
-    for (const a of data.schedulePreview) {
+    for (const a of (data.schedulePreview || [])) {
       if (!map.has(a.match_number)) map.set(a.match_number, []);
       map.get(a.match_number)!.push(a);
     }
@@ -116,7 +146,7 @@
         <button class="primary" onclick={createGroup} disabled={!newGroupName.trim()}>Create</button>
       </div>
 
-      {#if data.groups.length === 0}
+      {#if !data.groups?.length}
         <p class="dim">Create groups to organize your scouters into shifts</p>
       {:else}
         <div class="groups-grid">
@@ -142,7 +172,7 @@
         </div>
       {/if}
 
-      {#if data.groups.length > 0 && unassigned.length > 0}
+      {#if data.groups?.length > 0 && unassigned.length > 0}
         <div class="assign-row">
           <select bind:value={addScouter}>
             <option value="">Scouter...</option>
@@ -164,21 +194,32 @@
     <!-- Schedule generator -->
     <div class="section">
       <h3>Schedule Generator</h3>
-      {#if data.groups.length < 2}
+      {#if (data.groups?.length || 0) < 2}
         <p class="dim">Create at least 2 groups to generate a rotation schedule</p>
       {:else}
         <div class="gen-controls">
-          <label class="gen-label">
-            Matches per shift
-            <input type="number" bind:value={shiftLength} min="1" max="50" style="width: 70px;" />
-          </label>
+          <div class="gen-row">
+            <label class="gen-label">
+              Matches per shift
+              <input type="number" bind:value={shiftLength} min="1" max="50" style="width: 70px;" />
+            </label>
+            <label class="gen-label">
+              Groups active at once
+              <input type="number" bind:value={activeGroups} min="1" max={data.groups.length} style="width: 70px;" />
+            </label>
+          </div>
           <div class="gen-preview">
-            <span class="dim">Rotation:</span>
-            {#each data.groups as g, i}
-              <span class="rotation-tag" style="background: {groupColor(i)}">{g.name}</span>
-              {#if i < data.groups.length - 1}<span class="dim">then</span>{/if}
-            {/each}
-            <span class="dim">repeat</span>
+            {#if activeGroups === 1}
+              <span class="dim">Rotation:</span>
+              {#each data.groups as g, i}
+                <span class="rotation-tag" style="background: {groupColor(i)}">{g.name}</span>
+                {#if i < data.groups.length - 1}<span class="dim">then</span>{/if}
+              {/each}
+              <span class="dim">repeat</span>
+            {:else}
+              <span class="dim">{activeGroups} groups overlap per shift, {data.groups.length - activeGroups} on break.</span>
+              <span class="dim">~{poolSize} scouters cover {Math.min(4, poolSize)} teams/match.</span>
+            {/if}
           </div>
           <div class="gen-buttons">
             <button class="primary" onclick={generateSchedule} disabled={generating}>
@@ -211,23 +252,26 @@
           </thead>
           <tbody>
             {#each scheduleByMatch as row, i}
-              {@const prevGroup = i > 0 ? scheduleByMatch[i-1].assignments[0]?.group_name : null}
-              {@const currentGroup = row.assignments[0]?.group_name}
-              {#if prevGroup && currentGroup !== prevGroup}
+              {@const activeGroupNames = [...new Set(row.assignments.map((a) => a.group_name))]}
+              {@const prevGroupNames = i > 0 ? [...new Set(scheduleByMatch[i-1].assignments.map((a) => a.group_name))] : []}
+              {@const changed = i > 0 && JSON.stringify(activeGroupNames.sort()) !== JSON.stringify(prevGroupNames.sort())}
+              {#if changed}
                 <tr class="shift-break">
                   <td colspan="3">SHIFT CHANGE</td>
                 </tr>
               {/if}
               <tr>
                 <td class="match-col">Q{row.match_number}</td>
-                <td>
-                  <span class="group-badge" style="background: {groupColor(data.groups.findIndex((g: any) => g.name === row.assignments[0]?.group_name))}">
-                    {row.assignments[0]?.group_name}
-                  </span>
+                <td class="group-col">
+                  {#each activeGroupNames as gName}
+                    <span class="group-badge" style="background: {groupColor(data.groups.findIndex((g) => g.name === gName))}">
+                      {gName}
+                    </span>
+                  {/each}
                 </td>
                 <td class="assign-col">
                   {#each row.assignments as a}
-                    <span class="assign-chip">
+                    <span class="assign-chip" style="border-left: 3px solid {groupColor(data.groups.findIndex((g) => g.name === a.group_name))}">
                       <span class="assign-scouter">{a.scouter_name}</span>
                       <span class="assign-team">#{a.team_number}</span>
                     </span>
@@ -243,8 +287,13 @@
 
   <!-- All scouters list -->
   <div class="section">
-    <h3>All Scouters ({data.scouters.length})</h3>
-    {#if data.scouters.length === 0}
+    <div class="section-header">
+      <h3>All Scouters ({(data.scouters || []).length})</h3>
+      {#if data.scouters?.length}
+        <button class="small danger" onclick={deleteAllScouters}>Delete All</button>
+      {/if}
+    </div>
+    {#if !data.scouters?.length}
       <p class="dim">No scouters have joined yet. Scouters are created when they enter the app.</p>
     {:else}
       <div class="scouter-grid">
@@ -253,6 +302,7 @@
             <div class="scouter-header">
               <span class="scouter-name">{scouter.name}</span>
               <span class="scout-count">{scouter.scout_count} scouts</span>
+              <button class="remove-x" onclick={() => deleteScouter(scouter.id, scouter.name)}>x</button>
             </div>
             {#if scouter.group_name}
               <span class="group-badge small" style="background: {groupColor(data.groups.findIndex((g: any) => g.name === scouter.group_name))}">{scouter.group_name}</span>
@@ -268,38 +318,26 @@
   <!-- Scouter Accuracy -->
   <div class="section">
     <h3>Scouter Accuracy</h3>
-    <p class="dim small-text">Compares scouted data against actual FTC match scores. Lower deviation = more accurate.</p>
     {#if loadingAccuracy}
       <p class="dim">Loading...</p>
     {:else if accuracy.length === 0}
-      <p class="dim">No accuracy data. Sync match scores first (Setup > Sync Match Scores).</p>
+      <p class="dim">No accuracy data yet. Import an event with completed matches.</p>
     {:else}
       <div class="accuracy-grid">
         {#each accuracy as s}
+          {@const pct = s.withScores > 0 ? Math.max(0, Math.round(100 - s.avgAbsDev * 2.5)) : null}
+          {@const grade = pct === null ? '-' : pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F'}
+          {@const gradeColor = grade === 'A' ? 'green' : grade === 'B' ? 'green' : grade === 'C' ? 'yellow-c' : grade === 'D' ? 'red-c' : grade === 'F' ? 'red-c' : ''}
           <div class="card accuracy-card">
             <div class="acc-header">
               <span class="acc-name">{s.name}</span>
-              <span class="acc-count">{s.withScores} scored</span>
+              <span class="acc-grade {gradeColor}">{grade}</span>
             </div>
             {#if s.withScores > 0}
-              <div class="acc-stats">
-                <div class="acc-stat">
-                  <span class="acc-val" class:green={s.avgAbsDev < 10} class:yellow-c={s.avgAbsDev >= 10 && s.avgAbsDev < 20} class:red-c={s.avgAbsDev >= 20}>
-                    {s.avgAbsDev}
-                  </span>
-                  <span class="acc-label">Avg |Dev|</span>
-                </div>
-                <div class="acc-stat">
-                  <span class="acc-val">{s.avgDev > 0 ? '+' : ''}{s.avgDev}</span>
-                  <span class="acc-label">{s.avgDev > 0 ? 'Over' : s.avgDev < 0 ? 'Under' : 'Exact'}</span>
-                </div>
-              </div>
-              <div class="acc-bar-track">
-                <div class="acc-bar-fill" class:green={s.avgAbsDev < 10} class:yellow-c={s.avgAbsDev >= 10 && s.avgAbsDev < 20} class:red-c={s.avgAbsDev >= 20}
-                  style="width: {Math.max(5, 100 - s.avgAbsDev * 2)}%"></div>
-              </div>
+              <span class="acc-pct">{pct}%</span>
+              <span class="acc-detail">{s.withScores} matches graded</span>
             {:else}
-              <span class="dim small-text">No matches with actual scores</span>
+              <span class="dim small-text">No graded matches</span>
             {/if}
           </div>
         {/each}
@@ -353,6 +391,7 @@
 
   /* Generator */
   .gen-controls { display: flex; flex-direction: column; gap: 10px; }
+  .gen-row { display: flex; gap: 16px; }
   .gen-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-dim); }
   .gen-label input { font-size: 0.9rem; }
   .gen-preview { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.8rem; }
@@ -377,6 +416,7 @@
   }
   .schedule-table td { padding: 5px 8px; border-bottom: 1px solid var(--bg-light); }
   .match-col { font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .group-col { display: flex; gap: 4px; flex-wrap: wrap; }
 
   .shift-break td {
     text-align: center; font-size: 0.7rem; font-weight: 600;
@@ -402,34 +442,28 @@
   .scout-count { font-size: 0.75rem; color: var(--text-dim); }
 
   button.small { padding: 3px 8px; font-size: 0.7rem; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; }
 
   /* Accuracy */
   .accuracy-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 8px;
   }
 
-  .accuracy-card { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .accuracy-card { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
   .acc-header { display: flex; justify-content: space-between; align-items: center; }
-  .acc-name { font-weight: 600; }
-  .acc-count { font-size: 0.7rem; color: var(--text-dim); }
+  .acc-name { font-weight: 600; font-size: 0.9rem; }
 
-  .acc-stats { display: flex; gap: 16px; }
-  .acc-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-  .acc-val { font-size: 1.1rem; font-weight: 700; }
-  .acc-val.green { color: var(--green); }
-  .acc-val.yellow-c { color: var(--yellow); }
-  .acc-val.red-c { color: var(--red); }
-  .acc-label { font-size: 0.65rem; color: var(--text-dim); }
+  .acc-grade {
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
 
-  .acc-bar-track {
-    height: 4px; background: var(--bg-lighter); border-radius: 2px; overflow: hidden;
-  }
-  .acc-bar-fill {
-    height: 100%; border-radius: 2px; transition: width 0.3s;
-  }
-  .acc-bar-fill.green { background: var(--green); }
-  .acc-bar-fill.yellow-c { background: var(--yellow); }
-  .acc-bar-fill.red-c { background: var(--red); }
+  .acc-grade.green { color: var(--green); }
+  .acc-grade.yellow-c { color: var(--yellow); }
+  .acc-grade.red-c { color: var(--red); }
+
+  .acc-pct { font-size: 0.85rem; font-weight: 500; }
+  .acc-detail { font-size: 0.7rem; color: var(--text-dim); }
 </style>
