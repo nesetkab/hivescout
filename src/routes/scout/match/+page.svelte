@@ -393,42 +393,8 @@
 
   {#if phase === "auto" || phase === "transition" || phase === "teleop" || phase === "endgame"}
     <div class="scouting-screen">
-    <div
-      class="timer-bar"
-      class:auto={phase === "auto"}
-      class:transition={phase === "transition"}
-      class:teleop={phase === "teleop"}
-      class:endgame={phase === "endgame"}
-    >
-      <span class="timer-phase">{selectedMatchNum} - #{selectedTeam}</span>
-      <span class="timer-clock">{displayTime}</span>
-      <button class="danger" onclick={stopTimer}>Stop</button>
-    </div>
 
-    {#if phase === "transition"}
-      <div class="transition-banner">TRANSITION - pick up controllers</div>
-    {/if}
-
-    <div class="quick-actions">
-      {#if phase === "auto" || phase === "transition"}
-        <button
-          class="quick-btn"
-          class:active={autoLeave}
-          onclick={() => (autoLeave = !autoLeave)}
-        >
-          LEFT LAUNCH
-        </button>
-      {/if}
-      <button class="quick-btn" class:active={gateFlash} onclick={toggleGate}>
-        {gateFlash
-          ? "GATE OPENED"
-          : gateCount > 0
-            ? `GATE (${gateCount})`
-            : "OPEN GATE"}
-      </button>
-    </div>
-
-    <!-- Field map -->
+    <!-- Field map first -->
     <div
       class="field-container"
       onclick={handleFieldTap}
@@ -474,6 +440,42 @@
           <button class="small" onclick={undoLast}>Undo</button>
         {/if}
       </div>
+    </div>
+
+    <!-- Timer and controls below field -->
+    <div
+      class="timer-bar"
+      class:auto={phase === "auto"}
+      class:transition={phase === "transition"}
+      class:teleop={phase === "teleop"}
+      class:endgame={phase === "endgame"}
+    >
+      <span class="timer-phase">{selectedMatchNum} - #{selectedTeam}</span>
+      <span class="timer-clock">{displayTime}</span>
+      <button class="danger" onclick={stopTimer}>Stop</button>
+    </div>
+
+    {#if phase === "transition"}
+      <div class="transition-banner">TRANSITION - pick up controllers</div>
+    {/if}
+
+    <div class="quick-actions">
+      {#if phase === "auto" || phase === "transition"}
+        <button
+          class="quick-btn"
+          class:active={autoLeave}
+          onclick={() => (autoLeave = !autoLeave)}
+        >
+          LEFT LAUNCH
+        </button>
+      {/if}
+      <button class="quick-btn" class:active={gateFlash} onclick={toggleGate}>
+        {gateFlash
+          ? "GATE OPENED"
+          : gateCount > 0
+            ? `GATE (${gateCount})`
+            : "OPEN GATE"}
+      </button>
     </div>
 
     <!-- Attempted / Scored -->
@@ -558,6 +560,25 @@
         {/if}
       </div>
     {/if}
+
+    <div class="bottom-bar">
+      <button
+        class="bottom-btn dc-btn"
+        class:active={disconnected}
+        onclick={() => (disconnected = !disconnected)}
+      >
+        DISCONNECTED
+      </button>
+      {#if endgameBase !== "none"}
+        <button
+          class="bottom-btn pf-btn"
+          class:active={parkFailed}
+          onclick={() => (parkFailed = !parkFailed)}
+        >
+          PARK FAILED
+        </button>
+      {/if}
+    </div>
     </div>
   {/if}
 
@@ -687,23 +708,11 @@
   {/if}
 </div>
 
-{#if phase === "auto" || phase === "transition" || phase === "teleop" || phase === "endgame"}
+{#if false}
   <div class="fixed-bottom-bar">
-    <button
-      class="fixed-btn disconnected-btn"
-      class:active={disconnected}
-      onclick={() => (disconnected = !disconnected)}
-    >
-      DISCONNECTED
-    </button>
-    {#if endgameBase !== "none"}
-      <button
-        class="fixed-btn park-failed-btn"
-        class:active={parkFailed}
-        onclick={() => (parkFailed = !parkFailed)}
-      >
-        PARK FAILED
-      </button>
+    <button class="fixed-btn disconnected-btn">x</button>
+    {#if false}
+      <button class="fixed-btn park-failed-btn">x</button>
     {/if}
   </div>
 {/if}
@@ -1217,47 +1226,39 @@
     font-variant-numeric: tabular-nums;
   }
 
-  :global(.fixed-bottom-bar) {
-    position: fixed;
-    bottom: 56px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 32px);
-    max-width: 448px;
+  .bottom-bar {
     display: flex;
-    gap: 8px;
-    z-index: 10;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
-  :global(.fixed-btn) {
+  .bottom-btn {
     flex: 1;
-    padding: 12px;
-    font-family: "Instrument Sans", sans-serif;
-    font-size: 0.85rem;
+    padding: 8px;
+    font-size: 0.75rem;
     font-weight: 700;
-    border-radius: 8px;
-    cursor: pointer;
+    border-radius: 6px;
     text-align: center;
   }
 
-  :global(.disconnected-btn) {
+  .dc-btn {
     background: var(--bg-light);
     border: 2px solid var(--red);
     color: var(--red);
   }
 
-  :global(.disconnected-btn.active) {
+  .dc-btn.active {
     background: var(--red);
     color: #1a1a1a;
   }
 
-  :global(.park-failed-btn) {
+  .pf-btn {
     background: var(--bg-light);
     border: 2px solid var(--yellow);
     color: var(--yellow);
   }
 
-  :global(.park-failed-btn.active) {
+  .pf-btn.active {
     background: var(--yellow);
     color: #1a1a1a;
   }
