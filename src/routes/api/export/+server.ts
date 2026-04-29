@@ -62,9 +62,9 @@ export function GET({ url }) {
     csvLines.push(values.join(','));
   }
 
-  return new Response(csvLines.join('\n'), {
+  return new Response('\uFEFF' + csvLines.join('\n'), {
     headers: {
-      'Content-Type': 'text/csv',
+      'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': 'attachment; filename="hivescout-export.csv"'
     }
   });

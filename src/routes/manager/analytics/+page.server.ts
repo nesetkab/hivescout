@@ -41,7 +41,9 @@ export function load() {
           totalAttempted += e.attempted || 0;
           totalScored += e.scored || 0;
         }
-      } catch {}
+      } catch {
+        console.warn(`[Analytics] Corrupted scoring_events in match_scouts id=${s.id}, skipping`);
+      }
     }
 
     const avgAttempted = +(totalAttempted / n).toFixed(1);

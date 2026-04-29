@@ -18,6 +18,12 @@
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js');
+        // Replay offline queue when connection is restored
+        window.addEventListener('online', function() {
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('replay-offline-queue');
+          }
+        });
       }
     </script>
   </body>

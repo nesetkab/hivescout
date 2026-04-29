@@ -42,27 +42,34 @@ export function GET({ url }) {
 export function POST({ request }) {
   return (async () => {
     const d = await request.json();
-    const result = db.prepare(`
-      INSERT INTO match_scouts (
-        match_id, team_number, scouter_id,
-        auto_leave, auto_classified, auto_overflow, auto_pattern_matches,
-        teleop_classified, teleop_overflow, teleop_depot, teleop_pattern_matches,
-        opened_gate, endgame_base,
-        defense_rating, driver_skill, reliability,
-        minor_fouls, major_fouls, yellow_card, red_card,
-        notes, scoring_events, started_at, ended_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      d.match_id, d.team_number, d.scouter_id,
-      d.auto_leave || 0, d.auto_classified || 0, d.auto_overflow || 0, d.auto_pattern_matches || 0,
-      d.teleop_classified || 0, d.teleop_overflow || 0, d.teleop_depot || 0, d.teleop_pattern_matches || 0,
-      d.opened_gate || 0, d.endgame_base || 'none',
-      d.defense_rating || 0, d.driver_skill || 0, d.reliability || 0,
-      d.minor_fouls || 0, d.major_fouls || 0, d.yellow_card || 0, d.red_card || 0,
-      d.notes || '', JSON.stringify(d.scoring_events || []),
-      d.started_at || null, d.ended_at || null
-    );
-    return json({ id: result.lastInsertRowid });
+    try {
+      const result = db.prepare(`
+        INSERT INTO match_scouts (
+          match_id, team_number, scouter_id,
+          auto_leave, auto_classified, auto_overflow, auto_pattern_matches,
+          teleop_classified, teleop_overflow, teleop_depot, teleop_pattern_matches,
+          opened_gate, endgame_base,
+          defense_rating, driver_skill, reliability,
+          minor_fouls, major_fouls, yellow_card, red_card,
+          notes, scoring_events, started_at, ended_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        d.match_id, d.team_number, d.scouter_id,
+        d.auto_leave || 0, d.auto_classified || 0, d.auto_overflow || 0, d.auto_pattern_matches || 0,
+        d.teleop_classified || 0, d.teleop_overflow || 0, d.teleop_depot || 0, d.teleop_pattern_matches || 0,
+        d.opened_gate || 0, d.endgame_base || 'none',
+        d.defense_rating || 0, d.driver_skill || 0, d.reliability || 0,
+        d.minor_fouls || 0, d.major_fouls || 0, d.yellow_card || 0, d.red_card || 0,
+        d.notes || '', JSON.stringify(d.scoring_events || []),
+        d.started_at || null, d.ended_at || null
+      );
+      return json({ id: result.lastInsertRowid });
+    } catch (err: any) {
+      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        return json({ error: 'This team has already been scouted for this match by you' }, { status: 409 });
+      }
+      throw err;
+    }
   })();
 }
 

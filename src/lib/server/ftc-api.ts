@@ -13,17 +13,45 @@ function getSeason() {
   return process.env.FTC_SEASON || '2025';
 }
 
-async function ftcFetch<T>(endpoint: string): Promise<T> {
+async function ftcFetch<T>(endpoint: string, retries = 3): Promise<T> {
   const url = `${FTC_API_BASE}/${getSeason()}/${endpoint}`;
   console.log(`[FTC API] ${url}`);
-  const res = await fetch(url, {
-    headers: { Authorization: getAuth(), Accept: 'application/json' }
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`FTC API ${res.status}: ${text}`);
+
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      const res = await fetch(url, {
+        headers: { Authorization: getAuth(), Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('Retry-After') || 2);
+        console.log(`[FTC API] Rate limited, waiting ${retryAfter}s`);
+        await new Promise(r => setTimeout(r, retryAfter * 1000));
+        continue;
+      }
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`FTC API ${res.status}: ${text}`);
+      }
+
+      return res.json();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log(`[FTC API] Timeout on attempt ${attempt + 1}/${retries}`);
+      }
+      if (attempt === retries - 1) throw err;
+      const delay = Math.min(1000 * 2 ** attempt, 8000);
+      console.log(`[FTC API] Retry ${attempt + 1}/${retries} in ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
   }
-  return res.json();
+  throw new Error('FTC API: max retries exceeded');
 }
 
 export interface FTCTeam {
@@ -86,6 +114,7 @@ export async function getEventTeams(eventCode: string): Promise<FTCTeam[]> {
     allTeams.push(...(data.teams || []));
     if (page >= (data.pageTotal || 1)) break;
     page++;
+    await new Promise(r => setTimeout(r, 200));
   }
   return allTeams;
 }

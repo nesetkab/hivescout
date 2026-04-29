@@ -2,6 +2,12 @@
   import { invalidateAll } from "$app/navigation";
   import { matchActive } from "$lib/stores";
 
+  // DECODE game timing (seconds)
+  const AUTO_DURATION = 30;
+  const TRANSITION_END = 45;
+  const ENDGAME_START = 145;
+  const MATCH_TOTAL = 165;
+
   let { data } = $props();
 
   let selectedMatch = $state("");
@@ -72,6 +78,7 @@
   let reliability = $state(3);
   let notes = $state("");
   let submitting = $state(false);
+  let submitError = $state("");
 
   let matchTeams = $derived.by(() => {
     if (!selectedMatch) return [];
@@ -114,13 +121,13 @@
     elapsed = 0;
     timerInterval = setInterval(() => {
       elapsed += 1;
-      if (elapsed === 30 && phase === "auto") {
+      if (elapsed === AUTO_DURATION && phase === "auto") {
         phase = "transition";
       }
-      if (elapsed === 45 && phase === "transition") {
+      if (elapsed === TRANSITION_END && phase === "transition") {
         phase = "teleop";
       }
-      if (elapsed === 145 && phase === "teleop") {
+      if (elapsed === ENDGAME_START && phase === "teleop") {
         phase = "endgame";
       }
     }, 1000);
@@ -154,16 +161,15 @@
 
   let displayTime = $derived.by(() => {
     if (phase === "auto") {
-      // Auto counts down from 0:30
-      const remaining = Math.max(0, 30 - elapsed);
+      const remaining = Math.max(0, AUTO_DURATION - elapsed);
       return `0:${String(remaining).padStart(2, "0")}`;
     }
     if (phase === "transition") {
-      const remaining = Math.max(0, 45 - elapsed);
+      const remaining = Math.max(0, TRANSITION_END - elapsed);
       return `0:${String(remaining).padStart(2, "0")}`;
     }
-    // Teleop/endgame counts down from 2:00
-    const remaining = Math.max(0, 165 - elapsed);
+    // Teleop/endgame counts down from remaining match time
+    const remaining = Math.max(0, MATCH_TOTAL - elapsed);
     const m = Math.floor(remaining / 60);
     const s = remaining % 60;
     return `${m}:${String(s).padStart(2, "0")}`;
@@ -219,46 +225,57 @@
   async function submit() {
     if (!data.scouter || !selectedMatch || !selectedTeam) return;
     submitting = true;
-    await fetch("/api/matchscout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        match_id: Number(selectedMatch),
-        team_number: Number(selectedTeam),
-        scouter_id: data.scouter.id,
-        auto_leave: autoLeave ? 1 : 0,
-        auto_classified: autoClassified,
-        auto_overflow: autoOverflow,
-        auto_pattern_matches: 0,
-        teleop_classified: teleopClassified,
-        teleop_overflow: teleopOverflow,
-        teleop_depot: 0,
-        teleop_pattern_matches: 0,
-        opened_gate: gateCount,
-        endgame_base: endgameBase,
-        defense_rating: defenseRating,
-        driver_skill: driverSkill,
-        reliability,
-        minor_fouls: 0,
-        major_fouls: 0,
-        yellow_card: 0,
-        red_card: 0,
-        notes: [
-          disconnected ? "[DISCONNECTED]" : "",
-          parkFailed ? "[PARK FAILED]" : "",
-          parkMethod !== "none" ? `[PARK: ${parkMethod}]` : "",
-          notes,
-        ]
-          .filter(Boolean)
-          .join(" "),
-        scoring_events: scoringEvents,
-        started_at: startedAt,
-        ended_at: new Date().toISOString(),
-      }),
-    });
-    resetAll();
+    submitError = "";
+    try {
+      const res = await fetch("/api/matchscout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          match_id: Number(selectedMatch),
+          team_number: Number(selectedTeam),
+          scouter_id: data.scouter.id,
+          auto_leave: autoLeave ? 1 : 0,
+          auto_classified: autoClassified,
+          auto_overflow: autoOverflow,
+          auto_pattern_matches: 0,
+          teleop_classified: teleopClassified,
+          teleop_overflow: teleopOverflow,
+          teleop_depot: 0,
+          teleop_pattern_matches: 0,
+          opened_gate: gateCount,
+          endgame_base: endgameBase,
+          defense_rating: defenseRating,
+          driver_skill: driverSkill,
+          reliability,
+          minor_fouls: 0,
+          major_fouls: 0,
+          yellow_card: 0,
+          red_card: 0,
+          notes: [
+            disconnected ? "[DISCONNECTED]" : "",
+            parkFailed ? "[PARK FAILED]" : "",
+            parkMethod !== "none" ? `[PARK: ${parkMethod}]` : "",
+            notes,
+          ]
+            .filter(Boolean)
+            .join(" "),
+          scoring_events: scoringEvents,
+          started_at: startedAt,
+          ended_at: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        submitError = body?.error || `Submit failed (${res.status})`;
+        submitting = false;
+        return;
+      }
+      resetAll();
+      invalidateAll();
+    } catch (err: any) {
+      submitError = "Network error — your data has NOT been saved. Check your connection and try again.";
+    }
     submitting = false;
-    invalidateAll();
   }
 
   function resetAll() {
@@ -697,9 +714,12 @@
         ></textarea>
       </label>
 
-      <button class="primary submit-btn" onclick={submit} disabled={submitting}>
+      <button class="primary submit-btn" onclick={submit} disabled={submitting || !selectedMatch || !selectedTeam}>
         {submitting ? "Saving..." : "Submit Match Scout"}
       </button>
+      {#if submitError}
+        <div class="submit-error">{submitError}</div>
+      {/if}
     </section>
   {/if}
 </div>
@@ -1305,5 +1325,15 @@
     background: #6bff8a;
     color: #1a1a1a;
     border-color: #6bff8a;
+  }
+
+  .submit-error {
+    padding: 10px 12px;
+    background: rgba(255, 107, 107, 0.15);
+    border: 1px solid var(--red);
+    border-radius: 6px;
+    color: var(--red);
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 </style>

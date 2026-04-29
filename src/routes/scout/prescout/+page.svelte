@@ -4,55 +4,57 @@
   let { data } = $props();
 
   let selectedTeam = $state('');
-  let drivetrain = $state('');
-  let intakeType = $state('');
-  let canScoreGoal = $state(false);
-  let canClassify = $state(false);
-  let canOpenGate = $state(false);
+  let transferType = $state('');
+  let autoRating = $state(5);
   let autoCap = $state('');
+  let teleopRating = $state(5);
   let teleopCap = $state('');
   let endgameCap = $state('');
-  let strengths = $state('');
-  let weaknesses = $state('');
-  let notes = $state('');
   let submitting = $state(false);
+  let submitError = $state('');
 
   async function submit() {
     if (!selectedTeam || !data.scouter) return;
     submitting = true;
-    await fetch('/api/prescout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        team_number: Number(selectedTeam),
-        scouter_id: data.scouter.id,
-        drivetrain,
-        intake_type: intakeType,
-        can_score_goal: canScoreGoal ? 1 : 0,
-        can_classify: canClassify ? 1 : 0,
-        can_open_gate: canOpenGate ? 1 : 0,
-        auto_capabilities: autoCap,
-        teleop_capabilities: teleopCap,
-        endgame_capabilities: endgameCap,
-        strengths,
-        weaknesses,
-        notes
-      })
-    });
-    selectedTeam = '';
-    drivetrain = '';
-    intakeType = '';
-    canScoreGoal = false;
-    canClassify = false;
-    canOpenGate = false;
-    autoCap = '';
-    teleopCap = '';
-    endgameCap = '';
-    strengths = '';
-    weaknesses = '';
-    notes = '';
+    submitError = '';
+    try {
+      const res = await fetch('/api/prescout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          team_number: Number(selectedTeam),
+          scouter_id: data.scouter.id,
+          drivetrain: '',
+          intake_type: transferType,
+          can_score_goal: autoRating,
+          can_classify: teleopRating,
+          can_open_gate: 0,
+          auto_capabilities: autoCap,
+          teleop_capabilities: teleopCap,
+          endgame_capabilities: endgameCap,
+          strengths: '',
+          weaknesses: '',
+          notes: ''
+        })
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        submitError = body?.error || `Submit failed (${res.status})`;
+        submitting = false;
+        return;
+      }
+      selectedTeam = '';
+      transferType = '';
+      autoRating = 5;
+      autoCap = '';
+      teleopRating = 5;
+      teleopCap = '';
+      endgameCap = '';
+      invalidateAll();
+    } catch {
+      submitError = 'Network error — your data has NOT been saved. Check your connection and try again.';
+    }
     submitting = false;
-    invalidateAll();
   }
 </script>
 
@@ -72,78 +74,61 @@
     </label>
 
     <label>
-      Drivetrain
-      <select bind:value={drivetrain}>
+      Type of Transfer
+      <select bind:value={transferType}>
         <option value="">Select...</option>
-        <option value="mecanum">Mecanum</option>
-        <option value="tank">Tank / Differential</option>
-        <option value="swerve">Swerve</option>
-        <option value="other">Other</option>
+        <option value="passthrough">Passthrough</option>
+        <option value="spindexer">Spindexer</option>
+        <option value="other_indexer">Other Indexer</option>
+        <option value="other_nonindexer">Other Non-Indexer</option>
       </select>
     </label>
 
-    <label>
-      Intake Type
-      <select bind:value={intakeType}>
-        <option value="">Select...</option>
-        <option value="claw">Claw / Gripper</option>
-        <option value="roller">Roller Intake</option>
-        <option value="vacuum">Vacuum / Suction</option>
-        <option value="scoop">Scoop</option>
-        <option value="none">No Intake</option>
-        <option value="other">Other</option>
-      </select>
-    </label>
-
-    <fieldset class="capability-checks">
-      <legend>DECODE Capabilities</legend>
-      <label class="check-row">
-        <input type="checkbox" bind:checked={canScoreGoal} />
-        <span>Can score ARTIFACTS in GOAL</span>
-      </label>
-      <label class="check-row">
-        <input type="checkbox" bind:checked={canClassify} />
-        <span>Can CLASSIFY (artifacts go to RAMP)</span>
-      </label>
-      <label class="check-row">
-        <input type="checkbox" bind:checked={canOpenGate} />
-        <span>Can open GATE</span>
-      </label>
-    </fieldset>
+    <div class="rating-field">
+      <span class="rating-label">Auto Rating</span>
+      <div class="rating-row">
+        {#each Array.from({length: 10}, (_, i) => i + 1) as n}
+          <button type="button" class="rating-btn" class:selected={autoRating === n} onclick={() => autoRating = n}>{n}</button>
+        {/each}
+      </div>
+    </div>
 
     <label>
       Auto Capabilities
-      <textarea bind:value={autoCap} placeholder="Can they LEAVE? Score in auto? Read the OBELISK MOTIF?"></textarea>
+      <textarea bind:value={autoCap} placeholder="What do they do in auto?"></textarea>
+    </label>
+
+    <div class="rating-field">
+      <span class="rating-label">Teleop Rating</span>
+      <div class="rating-row">
+        {#each Array.from({length: 10}, (_, i) => i + 1) as n}
+          <button type="button" class="rating-btn" class:selected={teleopRating === n} onclick={() => teleopRating = n}>{n}</button>
+        {/each}
+      </div>
+    </div>
+
+    <label>
+      Teleop Capabilities
+      <textarea bind:value={teleopCap} placeholder="What do they do in teleop?"></textarea>
     </label>
 
     <label>
-      Teleop Strategy
-      <textarea bind:value={teleopCap} placeholder="Scoring speed? Use LOADING ZONE? Go for PATTERN?"></textarea>
-    </label>
-
-    <label>
-      Endgame / BASE
-      <textarea bind:value={endgameCap} placeholder="Can they return to BASE? Partial or full?"></textarea>
-    </label>
-
-    <label>
-      Strengths
-      <textarea bind:value={strengths} placeholder="What are they good at?"></textarea>
-    </label>
-
-    <label>
-      Weaknesses
-      <textarea bind:value={weaknesses} placeholder="Areas of concern?"></textarea>
-    </label>
-
-    <label>
-      Additional Notes
-      <textarea bind:value={notes} placeholder="Anything else..."></textarea>
+      Endgame
+      <select bind:value={endgameCap}>
+        <option value="">Select...</option>
+        <option value="lift">Lift</option>
+        <option value="tilt">Tilt</option>
+        <option value="normal_park">Normal Park</option>
+        <option value="none">None</option>
+      </select>
     </label>
 
     <button type="submit" class="primary" disabled={!selectedTeam || submitting}>
       {submitting ? 'Saving...' : 'Submit Pre-Scout'}
     </button>
+    {#if submitError}
+      <div class="submit-error">{submitError}</div>
+    {/if}
   </form>
 
   {#if data.myPrescouts.length > 0}
@@ -156,8 +141,10 @@
             <span>{ps.team_name}</span>
           </div>
           <div class="ps-detail">
-            {#if ps.drivetrain}<span>Drivetrain: {ps.drivetrain}</span>{/if}
-            {#if ps.strengths}<span>Strengths: {ps.strengths}</span>{/if}
+            {#if ps.intake_type}<span>Transfer: {ps.intake_type}</span>{/if}
+            {#if ps.can_score_goal}<span>Auto: {ps.can_score_goal}/10</span>{/if}
+            {#if ps.can_classify}<span>Teleop: {ps.can_classify}/10</span>{/if}
+            {#if ps.endgame_capabilities}<span>Endgame: {ps.endgame_capabilities}</span>{/if}
           </div>
         </div>
       {/each}
@@ -193,39 +180,41 @@
     color: var(--text-dim);
   }
 
-  fieldset {
-    border: 1px solid var(--bg-lighter);
-    border-radius: 6px;
-    padding: 12px;
+  .rating-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
-  legend {
+  .rating-label {
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--text-dim);
-    padding: 0 4px;
   }
 
-  .capability-checks {
+  .rating-row {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 4px;
   }
 
-  .check-row {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .check-row input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-  }
-
-  .check-row span {
+  .rating-btn {
+    flex: 1;
+    padding: 10px 0;
     font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 6px;
+    background: var(--bg-light);
+    border: 2px solid var(--bg-lighter);
     color: var(--text);
+    cursor: pointer;
+    font-family: 'Instrument Sans', sans-serif;
+  }
+
+  .rating-btn.selected {
+    background: var(--accent);
+    color: #1a1a1a;
+    border-color: var(--accent);
   }
 
   section {
@@ -258,5 +247,15 @@
     gap: 2px;
     font-size: 0.8rem;
     color: var(--text-dim);
+  }
+
+  .submit-error {
+    padding: 10px 12px;
+    background: rgba(255, 107, 107, 0.15);
+    border: 1px solid var(--red);
+    border-radius: 6px;
+    color: var(--red);
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 </style>

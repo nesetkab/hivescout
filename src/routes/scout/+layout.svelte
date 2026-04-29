@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { invalidateAll } from '$app/navigation';
@@ -9,6 +9,9 @@
   let currentPath = $derived($page.url.pathname);
   let scouterName = $derived($page.url.searchParams.get('name') || 'Unknown');
 
+  let online = $state(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  let offlineQueued = $state(false);
+
   let now = $state(new Date());
   onMount(() => {
     const iv = setInterval(() => { now = new Date(); }, 1000);
@@ -16,7 +19,27 @@
     const refreshIv = setInterval(() => {
       if (!$matchActive) invalidateAll();
     }, 30000);
-    return () => { clearInterval(iv); clearInterval(refreshIv); };
+
+    const goOnline = () => { online = true; offlineQueued = false; };
+    const goOffline = () => { online = false; };
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+
+    // Listen for SW offline queue messages
+    const swListener = (event: MessageEvent) => {
+      if (event.data?.type === 'offline-queued') {
+        offlineQueued = true;
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', swListener);
+
+    return () => {
+      clearInterval(iv);
+      clearInterval(refreshIv);
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+      navigator.serviceWorker?.removeEventListener('message', swListener);
+    };
   });
   let clockStr = $derived(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
@@ -33,6 +56,12 @@
     <span class="clock">{clockStr}</span>
     <span class="scouter-name">{scouterName}</span>
   </header>
+
+  {#if !online}
+    <div class="offline-banner">Offline — data will sync when reconnected</div>
+  {:else if offlineQueued}
+    <div class="offline-banner synced">Back online — syncing queued data...</div>
+  {/if}
 
   <main class:scouting>
     {@render children()}
@@ -121,5 +150,18 @@
 
   nav a.active {
     color: var(--accent);
+  }
+
+  .offline-banner {
+    padding: 6px 16px;
+    background: var(--red);
+    color: #1a1a1a;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .offline-banner.synced {
+    background: var(--green);
   }
 </style>

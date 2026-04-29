@@ -269,6 +269,135 @@
             </div>
           {/if}
         </div>
+
+        <!-- Performance Trends -->
+        {#if data.perMatch.length >= 2}
+          {@const pm = data.perMatch}
+          {@const scoredVals = pm.map((m: any) => m.scored)}
+          {@const skillVals = pm.map((m: any) => m.driver_skill)}
+          {@const relVals = pm.map((m: any) => m.reliability)}
+
+          {@const minScored = Math.min(...scoredVals)}
+          {@const maxScored = Math.max(...scoredVals, 1)}
+
+          {@const first3Scored = scoredVals.slice(0, Math.min(3, scoredVals.length))}
+          {@const last3Scored = scoredVals.slice(-Math.min(3, scoredVals.length))}
+          {@const avgFirst3 = first3Scored.reduce((a: number, b: number) => a + b, 0) / first3Scored.length}
+          {@const avgLast3 = last3Scored.reduce((a: number, b: number) => a + b, 0) / last3Scored.length}
+          {@const scoredTrendPct = avgFirst3 > 0 ? ((avgLast3 - avgFirst3) / avgFirst3) : (avgLast3 > 0 ? 1 : 0)}
+          {@const scoredTrend = scoredTrendPct > 0.15 ? 'improving' : scoredTrendPct < -0.15 ? 'declining' : 'stable'}
+
+          {@const first3Skill = skillVals.slice(0, Math.min(3, skillVals.length))}
+          {@const last3Skill = skillVals.slice(-Math.min(3, skillVals.length))}
+          {@const avgFirst3Skill = first3Skill.reduce((a: number, b: number) => a + b, 0) / first3Skill.length}
+          {@const avgLast3Skill = last3Skill.reduce((a: number, b: number) => a + b, 0) / last3Skill.length}
+          {@const skillTrendPct = avgFirst3Skill > 0 ? ((avgLast3Skill - avgFirst3Skill) / avgFirst3Skill) : (avgLast3Skill > 0 ? 1 : 0)}
+          {@const skillTrend = skillTrendPct > 0.15 ? 'improving' : skillTrendPct < -0.15 ? 'declining' : 'stable'}
+
+          {@const svgW = 240}
+          {@const svgH = 80}
+          {@const pad = 4}
+          {@const scoredPoints = pm.map((m: any, i: number) => {
+            const x = pad + (i / (pm.length - 1)) * (svgW - pad * 2);
+            const range = maxScored - minScored || 1;
+            const y = svgH - pad - ((m.scored - minScored) / range) * (svgH - pad * 2);
+            return `${x},${y}`;
+          }).join(' ')}
+
+          {@const ratingH = 60}
+          {@const skillPoints = pm.map((m: any, i: number) => {
+            const x = pad + (i / (pm.length - 1)) * (svgW - pad * 2);
+            const y = ratingH - pad - ((m.driver_skill - 1) / 4) * (ratingH - pad * 2);
+            return `${x},${y}`;
+          }).join(' ')}
+          {@const relPoints = pm.map((m: any, i: number) => {
+            const x = pad + (i / (pm.length - 1)) * (svgW - pad * 2);
+            const y = ratingH - pad - ((m.reliability - 1) / 4) * (ratingH - pad * 2);
+            return `${x},${y}`;
+          }).join(' ')}
+
+          <div class="card">
+            <h3>Performance Trends</h3>
+
+            <div class="trend-section">
+              <div class="trend-header">
+                <span class="trend-label">Scored per Match</span>
+                <span class="trend-indicator" class:trend-up={scoredTrend === 'improving'} class:trend-down={scoredTrend === 'declining'} class:trend-flat={scoredTrend === 'stable'}>
+                  {#if scoredTrend === 'improving'}
+                    &#9650; Improving
+                  {:else if scoredTrend === 'declining'}
+                    &#9660; Declining
+                  {:else}
+                    &#9654; Stable
+                  {/if}
+                </span>
+              </div>
+              <div class="trend-minmax">
+                <span>Min: {minScored}</span>
+                <span>Max: {maxScored}</span>
+              </div>
+              <svg viewBox="0 0 {svgW} {svgH}" class="trend-chart" preserveAspectRatio="none">
+                <polyline
+                  points={scoredPoints}
+                  fill="none"
+                  stroke="var(--accent)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                {#each pm as m, i}
+                  {@const x = pad + (i / (pm.length - 1)) * (svgW - pad * 2)}
+                  {@const range = maxScored - minScored || 1}
+                  {@const y = svgH - pad - ((m.scored - minScored) / range) * (svgH - pad * 2)}
+                  <circle cx={x} cy={y} r="3" fill="var(--accent)" />
+                {/each}
+              </svg>
+              <div class="trend-x-labels">
+                {#each pm as m}
+                  <span>Q{m.match_number}</span>
+                {/each}
+              </div>
+            </div>
+
+            <div class="trend-section">
+              <div class="trend-header">
+                <span class="trend-label">Ratings over Time</span>
+                <span class="trend-indicator" class:trend-up={skillTrend === 'improving'} class:trend-down={skillTrend === 'declining'} class:trend-flat={skillTrend === 'stable'}>
+                  {#if skillTrend === 'improving'}
+                    &#9650; Improving
+                  {:else if skillTrend === 'declining'}
+                    &#9660; Declining
+                  {:else}
+                    &#9654; Stable
+                  {/if}
+                </span>
+              </div>
+              <svg viewBox="0 0 {svgW} {ratingH}" class="trend-chart trend-chart-sm" preserveAspectRatio="none">
+                <polyline
+                  points={skillPoints}
+                  fill="none"
+                  stroke="var(--blue)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <polyline
+                  points={relPoints}
+                  fill="none"
+                  stroke="var(--yellow)"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <div class="trend-legend">
+                <span class="legend-item"><span class="dot" style="background: var(--blue);"></span> Driver Skill</span>
+                <span class="legend-item"><span class="dot" style="background: var(--yellow);"></span> Reliability</span>
+                <span class="legend-item dim-label">(1-5 scale)</span>
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
@@ -551,5 +680,94 @@
 
   .park-breakdown {
     margin-top: 4px;
+  }
+
+  /* Performance Trends */
+  .trend-section {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--bg-lighter);
+  }
+
+  .trend-section:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 8px;
+  }
+
+  .trend-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .trend-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .trend-indicator {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .trend-up {
+    color: var(--green);
+    background: rgba(74, 222, 128, 0.1);
+  }
+
+  .trend-down {
+    color: var(--red);
+    background: rgba(248, 113, 113, 0.1);
+  }
+
+  .trend-flat {
+    color: var(--text-dim);
+    background: var(--bg-lighter);
+  }
+
+  .trend-minmax {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .trend-chart {
+    width: 100%;
+    height: 80px;
+    background: var(--bg);
+    border-radius: 6px;
+  }
+
+  .trend-chart-sm {
+    height: 60px;
+  }
+
+  .trend-x-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .trend-legend {
+    display: flex;
+    gap: 10px;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    align-items: center;
+  }
+
+  .dim-label {
+    font-size: 0.6rem;
+    opacity: 0.6;
   }
 </style>

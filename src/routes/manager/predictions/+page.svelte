@@ -76,6 +76,26 @@
     </div>
   </div>
 
+  {#if data.accuracy.completedMatches > 0}
+    <div class="accuracy-bar card">
+      <span class="acc-title">Prediction Accuracy</span>
+      <div class="acc-stats">
+        <div class="acc-stat">
+          <span class="acc-num" class:green={data.accuracy.winRate >= 70} class:yellow-text={data.accuracy.winRate >= 50 && data.accuracy.winRate < 70} class:red-text={data.accuracy.winRate < 50}>{data.accuracy.winRate}%</span>
+          <span class="acc-label">Winner correct</span>
+        </div>
+        <div class="acc-stat">
+          <span class="acc-num">{data.accuracy.correctWinner}/{data.accuracy.completedMatches}</span>
+          <span class="acc-label">Matches</span>
+        </div>
+        <div class="acc-stat">
+          <span class="acc-num">{data.accuracy.avgScoreError}</span>
+          <span class="acc-label">Avg score error</span>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <div class="controls">
     <div class="mode-tabs">
       <button class:active={mode === 'matches'} onclick={() => mode = 'matches'}>Match List</button>
@@ -672,6 +692,50 @@
   .sim-vs {
     font-size: 1rem;
     font-weight: 700;
+    color: var(--text-dim);
+  }
+
+  /* Accuracy bar */
+  .accuracy-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 14px 20px;
+    border-left: 4px solid var(--accent);
+  }
+
+  .acc-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .acc-stats {
+    display: flex;
+    gap: 24px;
+    flex: 1;
+  }
+
+  .acc-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .acc-num {
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .acc-num.green { color: var(--green); }
+  .acc-num.yellow-text { color: var(--yellow); }
+  .acc-num.red-text { color: var(--red); }
+
+  .acc-label {
+    font-size: 0.7rem;
     color: var(--text-dim);
   }
 </style>

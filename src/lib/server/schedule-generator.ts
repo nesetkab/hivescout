@@ -83,24 +83,36 @@ export function generateSchedule(
       for (const teamNum of groupTeams) {
         if (group.members.length === 0) break;
 
-        // Find next unused member in this group
-        let idx = memberIndex[group.id] % group.members.length;
-        let attempts = 0;
-        while (usedMembers.has(idx) && attempts < group.members.length) {
-          memberIndex[group.id]++;
-          idx = memberIndex[group.id] % group.members.length;
-          attempts++;
+        // Find next unused member in this group (scan from current position)
+        const startIdx = memberIndex[group.id];
+        let found = false;
+        for (let scan = 0; scan < group.members.length; scan++) {
+          const idx = (startIdx + scan) % group.members.length;
+          if (!usedMembers.has(idx)) {
+            assignments.push({
+              match_id: match.id,
+              scouter_id: group.members[idx],
+              team_number: teamNum,
+              group_id: group.id,
+            });
+            usedMembers.add(idx);
+            memberIndex[group.id] = idx + 1;
+            found = true;
+            break;
+          }
         }
 
-        assignments.push({
-          match_id: match.id,
-          scouter_id: group.members[idx],
-          team_number: teamNum,
-          group_id: group.id,
-        });
-
-        usedMembers.add(idx);
-        memberIndex[group.id]++;
+        // All members used this match — wrap around
+        if (!found && group.members.length > 0) {
+          const idx = startIdx % group.members.length;
+          assignments.push({
+            match_id: match.id,
+            scouter_id: group.members[idx],
+            team_number: teamNum,
+            group_id: group.id,
+          });
+          memberIndex[group.id] = idx + 1;
+        }
       }
     }
   }

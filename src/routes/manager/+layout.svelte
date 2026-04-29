@@ -16,7 +16,10 @@
     { path: '/manager/scouters', label: 'Scouters' },
     { path: '/manager/scouts', label: 'Scouts' },
     { path: '/manager/analytics', label: 'Analytics' },
+    { path: '/manager/compare', label: 'Compare' },
     { path: '/manager/predictions', label: 'Predictions' },
+    { path: '/manager/picklist', label: 'Pick List' },
+    { path: '/manager/nexus', label: 'Nexus' },
     { path: '/manager/setup', label: 'Setup' },
   ];
 </script>

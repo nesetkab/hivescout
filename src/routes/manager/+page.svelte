@@ -9,11 +9,16 @@
   async function searchNotes() {
     if (!noteQuery.trim() && !noteTeam) return;
     searching = true;
-    const params = new URLSearchParams();
-    if (noteQuery.trim()) params.set('q', noteQuery.trim());
-    if (noteTeam) params.set('team', noteTeam);
-    const res = await fetch(`/api/notes?${params}`);
-    noteResults = await res.json();
+    try {
+      const params = new URLSearchParams();
+      if (noteQuery.trim()) params.set('q', noteQuery.trim());
+      if (noteTeam) params.set('team', noteTeam);
+      const res = await fetch(`/api/notes?${params}`);
+      if (!res.ok) throw new Error('Search failed');
+      noteResults = await res.json();
+    } catch (err) {
+      alert(err.message || 'Failed to search notes');
+    }
     searching = false;
   }
 
@@ -23,10 +28,16 @@
     noteResults = null;
   }
 
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function highlightMatch(text, query) {
-    if (!query.trim() || !text) return text || '';
+    if (!text) return '';
+    const safe = escapeHtml(text);
+    if (!query.trim()) return safe;
     const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark>$1</mark>');
+    return safe.replace(regex, '<mark>$1</mark>');
   }
 </script>
 

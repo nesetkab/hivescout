@@ -17,23 +17,33 @@
 
   async function deleteAllScouters() {
     if (!confirm(`Delete ALL ${data.scouters?.length} scouters and all their data?`)) return;
-    for (const s of data.scouters) {
-      await fetch('/api/scouters', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: s.id })
-      });
+    try {
+      for (const s of data.scouters) {
+        const res = await fetch('/api/scouters', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: s.id })
+        });
+        if (!res.ok) throw new Error(`Failed to delete scouter ${s.name}`);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete scouters');
     }
     invalidateAll();
   }
 
   async function deleteScouter(id: number, name: string) {
     if (!confirm(`Delete scouter "${name}" and all their data?`)) return;
-    await fetch('/api/scouters', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    });
+    try {
+      const res = await fetch('/api/scouters', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error(`Failed to delete scouter`);
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete scouter');
+    }
     invalidateAll();
   }
 
@@ -56,60 +66,90 @@
 
   async function createGroup() {
     if (!newGroupName.trim()) return;
-    await fetch('/api/groups', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newGroupName.trim() })
-    });
-    newGroupName = '';
+    try {
+      const res = await fetch('/api/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newGroupName.trim() })
+      });
+      if (!res.ok) throw new Error('Failed to create group');
+      newGroupName = '';
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function deleteGroup(id: number) {
     if (!confirm('Delete this group?')) return;
-    await fetch('/api/groups', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    });
+    try {
+      const res = await fetch('/api/groups', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error('Failed to delete group');
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function addMember() {
     if (!addToGroup || !addScouter) return;
-    await fetch('/api/groups/members', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group_id: Number(addToGroup), scouter_id: Number(addScouter) })
-    });
-    addScouter = '';
+    try {
+      const res = await fetch('/api/groups/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group_id: Number(addToGroup), scouter_id: Number(addScouter) })
+      });
+      if (!res.ok) throw new Error('Failed to add member');
+      addScouter = '';
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function removeMember(groupId: number, scouterId: number) {
-    await fetch('/api/groups/members', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ group_id: groupId, scouter_id: scouterId })
-    });
+    try {
+      const res = await fetch('/api/groups/members', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group_id: groupId, scouter_id: scouterId })
+      });
+      if (!res.ok) throw new Error('Failed to remove member');
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function generateSchedule() {
     generating = true;
-    const groupOrder = data.groups.map((g: any) => g.id);
-    await fetch('/api/schedule', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ shift_length: shiftLength, group_order: groupOrder, active_groups: activeGroups })
-    });
+    try {
+      const groupOrder = data.groups.map((g: any) => g.id);
+      const res = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shift_length: shiftLength, group_order: groupOrder, active_groups: activeGroups })
+      });
+      if (!res.ok) throw new Error('Failed to generate schedule');
+    } catch (err: any) {
+      alert(err.message);
+    }
     generating = false;
     invalidateAll();
   }
 
   async function clearSchedule() {
     if (!confirm('Clear the entire schedule?')) return;
-    await fetch('/api/schedule', { method: 'DELETE' });
+    try {
+      const res = await fetch('/api/schedule', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to clear schedule');
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
@@ -355,6 +395,10 @@
 
   .section { display: flex; flex-direction: column; gap: 10px; }
   .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  @media (max-width: 700px) {
+    .section-grid { grid-template-columns: 1fr; }
+  }
 
   h3 { font-size: 1rem; color: var(--text-dim); }
 

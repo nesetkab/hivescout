@@ -36,22 +36,33 @@
   async function doSearch() {
     if (!eventSearch.trim()) return;
     searching = true;
-    const res = await fetch(`/api/import?search=${encodeURIComponent(eventSearch)}`);
-    eventResults = await res.json();
+    try {
+      const res = await fetch(`/api/import?search=${encodeURIComponent(eventSearch)}`);
+      if (!res.ok) throw new Error('Search failed');
+      eventResults = await res.json();
+    } catch (err: any) {
+      alert(err.message || 'Failed to search events');
+    }
     searching = false;
   }
 
   async function importEvent(code: string) {
     importing = true;
     importResult = null;
-    const res = await fetch('/api/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ eventCode: code })
-    });
-    const data = await res.json();
-    if (data.success) {
-      importResult = data.imported;
+    try {
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventCode: code })
+      });
+      const data = await res.json();
+      if (data.success) {
+        importResult = data.imported;
+      } else {
+        alert(data.error || 'Import failed');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Network error during import');
     }
     importing = false;
     eventResults = [];
@@ -61,7 +72,12 @@
 
   async function clearMatches() {
     if (!confirm('Delete all matches and associated scout data?')) return;
-    await fetch('/api/matches', { method: 'DELETE' });
+    try {
+      const res = await fetch('/api/matches', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to clear matches');
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
@@ -107,35 +123,50 @@
 
   async function addTeam() {
     if (!teamNumber || !teamName) return;
-    await fetch('/api/teams', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ number: Number(teamNumber), name: teamName })
-    });
-    teamNumber = '';
-    teamName = '';
+    try {
+      const res = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: Number(teamNumber), name: teamName })
+      });
+      if (!res.ok) throw new Error('Failed to add team');
+      teamNumber = '';
+      teamName = '';
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function clearTeams() {
     if (!confirm('Delete ALL teams, matches, and scout data?')) return;
-    await fetch('/api/teams', { method: 'DELETE' });
+    try {
+      const res = await fetch('/api/teams', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to clear teams');
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function addMatch() {
     if (!matchNumber) return;
-    await fetch('/api/matches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        match_number: Number(matchNumber),
-        red1: red1 ? Number(red1) : null,
-        red2: red2 ? Number(red2) : null,
-        blue1: blue1 ? Number(blue1) : null,
-        blue2: blue2 ? Number(blue2) : null
-      })
-    });
+    try {
+      const res = await fetch('/api/matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          match_number: Number(matchNumber),
+          red1: red1 ? Number(red1) : null,
+          red2: red2 ? Number(red2) : null,
+          blue1: blue1 ? Number(blue1) : null,
+          blue2: blue2 ? Number(blue2) : null
+        })
+      });
+      if (!res.ok) throw new Error('Failed to add match');
+    } catch (err: any) {
+      alert(err.message);
+    }
     matchNumber = '';
     red1 = '';
     red2 = '';
@@ -396,6 +427,10 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+  }
+
+  @media (max-width: 700px) {
+    .panels { grid-template-columns: 1fr; }
   }
 
   .panel {

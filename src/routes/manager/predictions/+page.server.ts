@@ -151,10 +151,31 @@ export function load() {
   // Return all team stats for the "Pick Match" simulator
   const allTeamStats = Array.from(teamStats.values()).sort((a, b) => a.number - b.number);
 
+  // Prediction accuracy: compare predicted winner vs actual for completed matches with scores
+  const completedWithScores = matchPredictions.filter(
+    (m: any) => m.score_red != null && m.score_blue != null
+  );
+  let correctPredictions = 0;
+  let totalScoreError = 0;
+  for (const m of completedWithScores) {
+    const actualWinner = m.score_red > m.score_blue ? 'red' : m.score_blue > m.score_red ? 'blue' : 'tie';
+    if (m.winner === actualWinner) correctPredictions++;
+    const redError = Math.abs(m.redTotal - (m.score_red || 0));
+    const blueError = Math.abs(m.blueTotal - (m.score_blue || 0));
+    totalScoreError += (redError + blueError) / 2;
+  }
+  const accuracy = {
+    completedMatches: completedWithScores.length,
+    correctWinner: correctPredictions,
+    winRate: completedWithScores.length > 0 ? Math.round((correctPredictions / completedWithScores.length) * 100) : 0,
+    avgScoreError: completedWithScores.length > 0 ? +(totalScoreError / completedWithScores.length).toFixed(1) : 0,
+  };
+
   return {
     matchPredictions,
     allTeamStats,
     totalMatches: matches.length,
     teamsWithData: allTeamStats.filter(t => t.matches > 0).length,
+    accuracy,
   };
 }

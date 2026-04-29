@@ -52,23 +52,33 @@
 
   async function saveEdit() {
     if (!editingId) return;
-    await fetch('/api/matchscout', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editingId, ...editForm })
-    });
-    editingId = null;
-    editForm = {};
+    try {
+      const res = await fetch('/api/matchscout', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingId, ...editForm })
+      });
+      if (!res.ok) throw new Error('Failed to save changes');
+      editingId = null;
+      editForm = {};
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 
   async function deleteScout(id: number) {
     if (!confirm('Delete this scout entry?')) return;
-    await fetch('/api/matchscout', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    });
+    try {
+      const res = await fetch('/api/matchscout', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error('Failed to delete scout entry');
+    } catch (err: any) {
+      alert(err.message);
+    }
     invalidateAll();
   }
 </script>

@@ -16,12 +16,18 @@ export function GET() {
 export function POST({ request }) {
   return (async () => {
     const { name, role } = await request.json();
+    if (!name || !String(name).trim()) {
+      return json({ error: 'name is required' }, { status: 400 });
+    }
     try {
-      const result = db.prepare('INSERT INTO scouters (name, role) VALUES (?, ?)').run(name, role || 'scouter');
+      const result = db.prepare('INSERT INTO scouters (name, role) VALUES (?, ?)').run(String(name).trim(), role || 'scouter');
       return json({ id: result.lastInsertRowid });
-    } catch {
-      const existing = db.prepare('SELECT * FROM scouters WHERE name = ?').get(name);
-      return json(existing);
+    } catch (err: any) {
+      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        const existing = db.prepare('SELECT * FROM scouters WHERE name = ?').get(String(name).trim());
+        return json(existing);
+      }
+      throw err;
     }
   })();
 }
