@@ -63,7 +63,7 @@ db.exec(`
 const cols = db.prepare("PRAGMA table_info(match_scouts)").all() as any[];
 const hasOldSchema = cols.some((c: any) => c.name === 'auto_samples_scored');
 if (hasOldSchema) {
-  db.exec('ALTER TABLE match_scouts RENAME TO match_scouts_backup_old');
+  try { db.exec('ALTER TABLE match_scouts RENAME TO match_scouts_backup_old'); } catch {}
 }
 
 db.exec(`
