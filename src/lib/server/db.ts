@@ -107,16 +107,6 @@ db.exec(`
 db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_match_scouts_unique
   ON match_scouts(match_id, team_number, scouter_id)`);
 
-// Indexes for common query patterns
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_match_scouts_match ON match_scouts(match_id);
-  CREATE INDEX IF NOT EXISTS idx_match_scouts_team ON match_scouts(team_number);
-  CREATE INDEX IF NOT EXISTS idx_match_scouts_scouter ON match_scouts(scouter_id);
-  CREATE INDEX IF NOT EXISTS idx_matches_number ON matches(match_number);
-  CREATE INDEX IF NOT EXISTS idx_shift_assignments_match ON shift_assignments(match_id);
-  CREATE INDEX IF NOT EXISTS idx_shift_assignments_scouter ON shift_assignments(scouter_id);
-`);
-
 // Shift scheduling tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS scout_groups (
@@ -142,6 +132,16 @@ db.exec(`
     is_break INTEGER NOT NULL DEFAULT 0,
     UNIQUE(match_id, team_number)
   );
+`);
+
+// Indexes for common query patterns (must be after all table creation)
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_match_scouts_match ON match_scouts(match_id);
+  CREATE INDEX IF NOT EXISTS idx_match_scouts_team ON match_scouts(team_number);
+  CREATE INDEX IF NOT EXISTS idx_match_scouts_scouter ON match_scouts(scouter_id);
+  CREATE INDEX IF NOT EXISTS idx_matches_number ON matches(match_number);
+  CREATE INDEX IF NOT EXISTS idx_shift_assignments_match ON shift_assignments(match_id);
+  CREATE INDEX IF NOT EXISTS idx_shift_assignments_scouter ON shift_assignments(scouter_id);
 `);
 
 // Pick list table for alliance selection
